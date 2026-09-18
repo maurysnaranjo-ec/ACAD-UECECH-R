@@ -4725,15 +4725,54 @@
             });
         }
 
+        // CORRECCIÓN (2026-09-16): las 3 tablas de "Información de Estudiantes" (Datos Generales,
+        // Directiva PPFF, Directiva de Estudiantes) se ven perfectas en pantalla porque cada celda es
+        // un <input>/<select> sin borde que VISUALMENTE parece texto plano — pero un <input> es un
+        // control de formulario, no texto: nunca hace salto de línea con su contenido y, si la celda
+        // termina más angosta que su valor, el navegador simplemente lo recorta/desplaza (invisible al
+        // imprimir, porque una hoja impresa no se puede "desplazar"). Eso era la causa real de los
+        // apellidos y nombres cortados a la mitad ("AUQUILI" en vez de "AUQUILLA LOPEZ..."). Esta
+        // función, usada SOLO para esas 3 tablas (ver el 2º parámetro de capturarBloqueImprimible más
+        // abajo — el resto de documentos impresos no la usan y siguen exactamente igual), reemplaza
+        // cada <input>/<select> del clon por un <span> con el mismo texto y las mismas clases de
+        // Tailwind (mismo color, negrita, alineación, mayúsculas, etc.) — así, al imprimir, es texto
+        // real que SÍ puede bajar de línea igual que cualquier otro texto, sin perder ni un carácter.
+        function convertirCamposATextoParaImpresion(contenedorClon) {
+            contenedorClon.querySelectorAll('input').forEach(input => {
+                const span = document.createElement('span');
+                span.className = input.className;
+                // display:block (en vez de mantenerlo inline, como es un <span> por defecto) para que
+                // las clases de Tailwind ya presentes (w-full, text-center, text-left, uppercase, etc.)
+                // sigan funcionando exactamente igual que en pantalla — un <span> inline ignora
+                // "width" y "text-align" sobre sí mismo.
+                span.style.display = 'block';
+                span.textContent = input.value || '';
+                if (!input.value) span.innerHTML = '&nbsp;';
+                input.replaceWith(span);
+            });
+            contenedorClon.querySelectorAll('select').forEach(select => {
+                const opcionElegida = select.options[select.selectedIndex];
+                const span = document.createElement('span');
+                span.style.display = 'block';
+                span.className = select.className;
+                span.textContent = (opcionElegida && opcionElegida.textContent.trim()) || '-';
+                select.replaceWith(span);
+            });
+        }
+
         // Captura, como texto HTML listo para imprimir, el documento actualmente visible dentro del
         // elemento indicado (selector CSS o el propio elemento). Devuelve '' si no existe.
-        function capturarBloqueImprimible(selectorOEl) {
+        // convertirCampos (opcional, por defecto false): ver convertirCamposATextoParaImpresion arriba
+        // — solo lo activan las 3 pantallas de Información de Estudiantes; el resto de documentos que
+        // ya imprimen bien no pasan este parámetro y su comportamiento no cambia en absoluto.
+        function capturarBloqueImprimible(selectorOEl, convertirCampos) {
             const original = typeof selectorOEl === 'string' ? document.querySelector(selectorOEl) : selectorOEl;
             if (!original) return '';
             sincronizarValoresParaImpresion(original);
             const clon = original.cloneNode(true);
             reemplazarCanvasPorImagenEnClon(clon, original);
             revelarBloquesSoloImpresion(clon);
+            if (convertirCampos) convertirCamposATextoParaImpresion(clon);
             clon.classList.add('bloque-doc-imprimible');
             return clon.outerHTML;
         }
@@ -4873,16 +4912,27 @@
             // para forzar un layout de columnas fijas + palabras cortadas letra por letra (que es lo
             // que provoca el texto vertical/distorsionado). Aquí se le da un trato especial: columnas
             // según su contenido real y saltos de línea solo donde el propio texto ya los define.
+            // CORRECCIÓN (2026-09-16): el mismo problema (table-layout:fixed forzado globalmente en
+            // @media print + overflow-wrap:break-word globalmente) también partía las tablas, más
+            // angostas, de Directiva PPFF y Directiva de Estudiantes — mismo arreglo, aplicado también
+            // a esas dos, con una letra más cercana a como se ve en pantalla (no necesitan bajar a 8px
+            // como la de 19 columnas).
             const cssTablaAncha = `
                 @media print {
-                    #subseccion-info-generales table { table-layout: auto !important; }
-                    #subseccion-info-generales th, #subseccion-info-generales td {
+                    #subseccion-info-generales table,
+                    #subseccion-info-ppff table,
+                    #subseccion-info-directiva-est table { table-layout: auto !important; }
+                    #subseccion-info-generales th, #subseccion-info-generales td,
+                    #subseccion-info-ppff th, #subseccion-info-ppff td,
+                    #subseccion-info-directiva-est th, #subseccion-info-directiva-est td {
                         overflow-wrap: normal !important;
                         word-break: normal !important;
                         white-space: normal !important;
-                        font-size: 8px !important;
                         padding: 2px 3px !important;
                     }
+                    #subseccion-info-generales th, #subseccion-info-generales td { font-size: 8px !important; }
+                    #subseccion-info-ppff th, #subseccion-info-ppff td,
+                    #subseccion-info-directiva-est th, #subseccion-info-directiva-est td { font-size: 10px !important; }
                     #subseccion-info-generales td.whitespace-nowrap { white-space: nowrap !important; }
                 }`;
 
@@ -5812,7 +5862,7 @@ ${estilosHtml}
             const textoOriginal = boton ? boton.innerText : '';
             if (boton) { boton.disabled = true; boton.innerText = '⏳ Preparando...'; }
             try {
-                const html = capturarBloqueImprimible('#subseccion-info-generales');
+                const html = capturarBloqueImprimible('#subseccion-info-generales', true);
                 abrirVentanaImpresionDocumentos('Información de Estudiantes - Datos Generales', [{ html }], 'landscape', true);
             } finally {
                 if (boton) { boton.disabled = false; boton.innerText = textoOriginal; }
@@ -5823,7 +5873,7 @@ ${estilosHtml}
             const textoOriginal = boton ? boton.innerText : '';
             if (boton) { boton.disabled = true; boton.innerText = '⏳ Preparando...'; }
             try {
-                const html = capturarBloqueImprimible('#subseccion-info-ppff');
+                const html = capturarBloqueImprimible('#subseccion-info-ppff', true);
                 abrirVentanaImpresionDocumentos('Directiva de Padres de Familia', [{ html }], 'portrait', false);
             } finally {
                 if (boton) { boton.disabled = false; boton.innerText = textoOriginal; }
@@ -5834,7 +5884,7 @@ ${estilosHtml}
             const textoOriginal = boton ? boton.innerText : '';
             if (boton) { boton.disabled = true; boton.innerText = '⏳ Preparando...'; }
             try {
-                const html = capturarBloqueImprimible('#subseccion-info-directiva-est');
+                const html = capturarBloqueImprimible('#subseccion-info-directiva-est', true);
                 abrirVentanaImpresionDocumentos('Directiva de Estudiantes', [{ html }], 'portrait', false);
             } finally {
                 if (boton) { boton.disabled = false; boton.innerText = textoOriginal; }
