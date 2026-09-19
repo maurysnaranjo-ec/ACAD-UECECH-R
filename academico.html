@@ -519,6 +519,13 @@
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-md font-bold text-emerald-800" id="selector-curso-titulo">Selecciona un curso</h2>
                 <div class="flex gap-3 items-center">
+                    <!-- 2026-09-18: "Volver" solo se muestra cuando el admin reabre este MISMO selector
+                         desde dentro de la app (ver btn-cambiar-curso-admin/abrirSelectorCursoParaCambiar)
+                         para cambiar de curso SIN cerrar sesión — el curso que ya tenía abierto sigue
+                         intacto en memoria, así que "Volver" simplemente cierra el overlay sin elegir
+                         nada nuevo. En el primer ingreso (login) no hay curso previo al que volver, así
+                         que este botón permanece oculto y solo queda "Cerrar sesión", igual que siempre. -->
+                    <button id="btn-volver-selector-curso" onclick="cerrarSelectorCursoSinCambiar()" class="hidden text-xs text-slate-500 underline">✕ Volver</button>
                     <button onclick="abrirCambiarClave()" class="text-xs text-emerald-700 underline">🔑 Cambiar mi contraseña</button>
                     <button onclick="cerrarSesionNube()" class="text-xs text-red-500 underline">Cerrar sesión</button>
                 </div>
@@ -672,6 +679,13 @@
             </div>
 
             <div class="flex flex-wrap gap-2">
+                <!-- 2026-09-18: visible SOLO para el administrador (se muestra/oculta en
+                     sincronizarLabelsContexto, junto al resto de ajustes por rol) — reutiliza el mismo
+                     selector de curso que ya se usa al iniciar sesión, así que la lista de cursos y el
+                     estilo son exactamente los mismos, ya probados. -->
+                <button id="btn-cambiar-curso-admin" onclick="abrirSelectorCursoParaCambiar()" class="hidden bg-teal-700 hover:bg-teal-800 text-white px-3 py-1.5 rounded text-xs font-bold transition shadow">
+                    🔄 Cambiar de Curso
+                </button>
                 <button id="btn-reporte-completo-excel" onclick="exportarReporteCompletoExcel()" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded text-xs font-bold transition shadow">
                     📊 Descargar Reporte Completo (Excel)
                 </button>
@@ -3144,14 +3158,46 @@
             overlay.classList.add('flex');
         }
 
+        // 2026-09-18: reabre el MISMO selector de curso de siempre, pero desde DENTRO de la app (botón
+        // "🔄 Cambiar de Curso" del encabezado, solo visible para admin) en vez de en el login — para
+        // que el administrador pueda saltar de un curso a otro sin cerrar sesión y volver a entrar.
+        // No se toca nada de la carga/guardado: sigue siendo, exactamente como antes, "un curso cargado
+        // a la vez" (seleccionarCursoNube ya guarda cualquier cambio pendiente del curso anterior antes
+        // de reemplazarlo — ver ahí mismo — así que no hay riesgo de perder ediciones sin guardar).
+        function abrirSelectorCursoParaCambiar() {
+            const btnVolver = document.getElementById('btn-volver-selector-curso');
+            if (btnVolver) btnVolver.classList.remove('hidden');
+            mostrarSelectorDeCurso();
+        }
+
+        // Cierra el selector reabierto por "🔄 Cambiar de Curso" SIN elegir un curso distinto —
+        // el curso que ya estaba abierto sigue exactamente igual, en memoria, tal como se dejó.
+        function cerrarSelectorCursoSinCambiar() {
+            const overlay = document.getElementById('overlay-selector-curso');
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+            const btnVolver = document.getElementById('btn-volver-selector-curso');
+            if (btnVolver) btnVolver.classList.add('hidden');
+        }
+
         async function seleccionarCursoNube(cursoCatalogo) {
             try {
+                // 2026-09-18: si ya había un curso abierto con cambios sin guardar todavía (el
+                // guardado automático es con un pequeño retraso — ver temporizadorGuardadoNube) y el
+                // admin usa "🔄 Cambiar de Curso" para saltar a otro, ese guardado pendiente hay que
+                // completarlo ANTES de reemplazar db.cursos por los del curso nuevo — si no, se perdería
+                // en silencio. Antes esto no hacía falta aquí porque esta función solo se llamaba una
+                // vez, recién iniciada la sesión (sin ninguna edición todavía pendiente); ahora que
+                // también se usa para cambiar de curso en medio de una sesión, sí puede haber una.
+                if (temporizadorGuardadoNube) await guardarInmediatoNube();
                 const datos = await llamarAPI('obtenerCurso', { idCurso: cursoCatalogo.idCurso });
                 idCursoActivoNube = cursoCatalogo.idCurso;
                 cursoCatalogoActivo = cursoCatalogo;
                 reconstruirDbDesdeNube(cursoCatalogo, datos);
                 document.getElementById('overlay-selector-curso').classList.add('hidden');
                 document.getElementById('overlay-selector-curso').classList.remove('flex');
+                const btnVolverSelector = document.getElementById('btn-volver-selector-curso');
+                if (btnVolverSelector) btnVolverSelector.classList.add('hidden');
                 revisarYRepararEstructuras();
                 inicializarSelectorAsignaturasExternas();
                 renderizarSelectorCursosGlobal();
@@ -7330,6 +7376,9 @@ ${estilosHtml}
             document.querySelectorAll('.label-curso-contexto').forEach(el => {
                 el.innerText = `${displayTexto} | Asignatura: ${c.asignatura || '-'} | Periodo: ${db.configGeneral.anioLectivo || '-'}`;
             });
+            // 2026-09-18: botón "🔄 Cambiar de Curso" del encabezado — solo el admin lo ve.
+            const btnCambiarCursoAdmin = document.getElementById('btn-cambiar-curso-admin');
+            if (btnCambiarCursoAdmin) btnCambiarCursoAdmin.classList.toggle('hidden', !(sesionActual && sesionActual.rol === 'admin'));
             
             const menuWrapperAcompanamiento = document.getElementById('menu-wrapper-acompanamiento');
             const esAdminSesion = sesionActual && sesionActual.rol === 'admin';
