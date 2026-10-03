@@ -656,6 +656,48 @@
             <div id="reportes-contenido" class="space-y-6 text-sm">
                 <p class="text-slate-400 text-xs">Presiona "Generar reportes" para consultar la información más reciente.</p>
             </div>
+
+            <!-- 2026-09-21: Reportes institucionales consolidados — TODOS los cursos del plantel en un
+                 solo archivo de Excel por reporte (cada uno hace su propia consulta de solo lectura con
+                 obtenerCursosMultiples, igual que ya hacía "Cursos Activos" al iniciar sesión — no
+                 guarda ni modifica nada, así que no hay riesgo para lo que ya funciona). Solo visible
+                 para el administrador, igual que el resto de este overlay. -->
+            <hr class="my-4">
+            <h3 class="font-semibold mb-1 text-sm text-slate-700">📦 Reportes Institucionales (TODOS los cursos, un archivo de Excel por reporte)</h3>
+            <p class="text-[11px] text-slate-500 mb-3">Cada botón genera y descarga un archivo de Excel aparte con la información de <b>todos los cursos del plantel que ya tengan estudiantes registrados</b> (los cursos todavía vacíos no aparecen). Puede tardar varios segundos mientras se consulta cada curso.</p>
+            <div class="space-y-3">
+                <div>
+                    <p class="text-xs font-semibold text-slate-600 mb-1">Directivas (todos los cursos en una sola hoja)</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button id="btn-reporte-directiva-ppff-todos" onclick="exportarDirectivaPPFFConsolidadaExcel()" class="bg-teal-700 hover:bg-teal-800 text-white rounded px-3 py-1.5 text-xs font-semibold transition">📥 Directiva de Padres de Familia</button>
+                        <button id="btn-reporte-directiva-estudiantes-todos" onclick="exportarDirectivaEstudiantesConsolidadaExcel()" class="bg-teal-700 hover:bg-teal-800 text-white rounded px-3 py-1.5 text-xs font-semibold transition">📥 Directiva de Estudiantes</button>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-slate-600 mb-1">Información de Estudiantes y Registro Interdisciplinar (una hoja por curso)</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button id="btn-reporte-info-estudiantes-todos" onclick="exportarInfoEstudiantesConsolidadoExcel()" class="bg-cyan-700 hover:bg-cyan-800 text-white rounded px-3 py-1.5 text-xs font-semibold transition">📥 Información de Estudiantes (Datos Generales)</button>
+                        <button id="btn-reporte-registro-interdisciplinar-todos" onclick="exportarRegistroInterdisciplinarConsolidadoExcel()" class="bg-cyan-700 hover:bg-cyan-800 text-white rounded px-3 py-1.5 text-xs font-semibold transition">📥 Registro Interdisciplinar</button>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-slate-600 mb-1">Calificaciones por materia (un archivo por periodo, una hoja por curso)</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button class="btn-reporte-calificaciones-todos bg-indigo-700 hover:bg-indigo-800 text-white rounded px-3 py-1.5 text-xs font-semibold transition" data-periodo="t1" data-etiqueta="Trimestre 1" onclick="exportarCalificacionesConsolidadoExcel(this)">📥 Trimestre 1</button>
+                        <button class="btn-reporte-calificaciones-todos bg-indigo-700 hover:bg-indigo-800 text-white rounded px-3 py-1.5 text-xs font-semibold transition" data-periodo="t2" data-etiqueta="Trimestre 2" onclick="exportarCalificacionesConsolidadoExcel(this)">📥 Trimestre 2</button>
+                        <button class="btn-reporte-calificaciones-todos bg-indigo-700 hover:bg-indigo-800 text-white rounded px-3 py-1.5 text-xs font-semibold transition" data-periodo="t3" data-etiqueta="Trimestre 3" onclick="exportarCalificacionesConsolidadoExcel(this)">📥 Trimestre 3</button>
+                        <button class="btn-reporte-calificaciones-todos bg-indigo-700 hover:bg-indigo-800 text-white rounded px-3 py-1.5 text-xs font-semibold transition" data-periodo="anual" data-etiqueta="Anual" onclick="exportarCalificacionesConsolidadoExcel(this)">📥 Anual</button>
+                        <button class="btn-reporte-calificaciones-todos bg-indigo-700 hover:bg-indigo-800 text-white rounded px-3 py-1.5 text-xs font-semibold transition" data-periodo="supletorio" data-etiqueta="Supletorio" onclick="exportarCalificacionesConsolidadoExcel(this)">📥 Supletorio</button>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-slate-600 mb-1">Asistencia (una hoja por curso, separada por mes y con total anual)</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button id="btn-reporte-asistencia-todos" onclick="exportarAsistenciaConsolidadoExcel()" class="bg-amber-700 hover:bg-amber-800 text-white rounded px-3 py-1.5 text-xs font-semibold transition">📥 Asistencia por Mes y Anual</button>
+                    </div>
+                </div>
+            </div>
+            <p id="reportes-institucionales-mensaje" class="text-xs mt-3"></p>
         </div>
     </div>
 
@@ -3516,6 +3558,23 @@
                                 : (datosMat ? { t1: notaFinalDesdeValorGuardado(datosMat.t1), t2: notaFinalDesdeValorGuardado(datosMat.t2), t3: notaFinalDesdeValorGuardado(datosMat.t3), supletorio: datosMat.supletorio || '' } : { t1: '', t2: '', t3: '', supletorio: '' });
                     });
                 });
+                // CORRECCIÓN (2026-10-03): esta vista general del admin no tiene una "asignatura
+                // propia" (las notas reales viven en otrasMateriasNivel, arriba), así que esto se
+                // dejaba en un objeto vacío {} — pero varias pantallas (Calificaciones, Actas, Informe
+                // de Asignatura, Refuerzo) asumen que SIEMPRE existe curso.calificaciones[estId].t1 /
+                // .t2 / .t3, aunque sea con valores en blanco (ver el mismo razonamiento, ya aplicado,
+                // un poco más abajo en la rama "admin o acompañamiento" clásica). Con {} vacío, apenas
+                // el admin entraba a cualquier curso (todos los niveles usan este modelo desde 2026-07-
+                // 29 — ver NIVELES_ACADEMICOS) esas pantallas fallaban con "Cannot read properties of
+                // undefined (reading 't1')". Se completa aquí con la misma estructura en blanco.
+                const calificacionesVaciasSeguras = {};
+                estudiantesNucleo.forEach(est => {
+                    calificacionesVaciasSeguras[est.id] = {
+                        t1: { insumos: Array(10).fill(''), sumativa: '', proyecto: '', refuerzo: '', refuerzoProyecto: '' },
+                        t2: { insumos: Array(10).fill(''), sumativa: '', proyecto: '', refuerzo: '', refuerzoProyecto: '' },
+                        t3: { insumos: Array(10).fill(''), sumativa: '', proyecto: '', refuerzo: '', refuerzoProyecto: '' }
+                    };
+                });
                 const slot = crearCursoVacioNube(0);
                 Object.assign(slot, {
                     label: cursoCatalogo.grado, paralelo: cursoCatalogo.paralelo, asignatura: '',
@@ -3524,7 +3583,7 @@
                     docenteOVP: nucleo.docenteOVP || '',
                     boletinVisiblePortal: !!nucleo.boletinVisiblePortal,
                     estudiantes: estudiantesNucleo,
-                    calificaciones: {}, supletorios: {},
+                    calificaciones: calificacionesVaciasSeguras, supletorios: {},
                     conducta: nucleo.conducta || {}, asistenciaDiaria: datosNube.asistenciaDiaria || {}, horarios: datosNube.horarios || {}, ovp: nucleo.ovp || {},
                     otrasMaterias: otrasMateriasNivel,
                     nombresAsignaturasNivel: nivelDeEsteCurso.materias || [],
@@ -6624,6 +6683,299 @@ ${estilosHtml}
                 ['N°', 'Apellidos y Nombres', 'Días Asistidos', 'Faltas', 'Faltas Justif.', 'Atrasos', 'Total Faltas J/I'],
                 filasResumen, [5, 32, 14, 12, 16, 12, 16]);
         }
+
+        // ═══════════════ Reportes Institucionales consolidados (TODOS los cursos) — admin, 2026-09-21 ═══════════════
+        // Todo lo de aquí abajo es NUEVO y de solo lectura: ninguna función existente de arriba se
+        // modifica ni se le cambia su firma. Reutiliza excelCrearHojaTablaGeneral/excelIntentarIncrustarSello/
+        // guardarBlobComoArchivo tal cual ya existen (esa función no depende de db.cursos[activo], ya
+        // recibe la línea de encabezado institucional ya armada) — así que no hace falta ninguna
+        // variante nueva del "motor" de hojas de Excel, solo nuevas funciones que ARMAN los datos.
+
+        // Pide, en una sola llamada al backend (igual que ya hace cargarTodosLosCursosAsignados), el
+        // núcleo+materias+asistencia de TODOS los cursos del catálogo institucional (cursosDisponiblesNube
+        // — para el admin es la lista COMPLETA de la hoja "Cursos", no solo los suyos). Se descartan los
+        // cursos que nunca han tenido ni un/a estudiante registrado (nucleo null o sin nómina), para no
+        // llenar los reportes de hojas vacías.
+        async function obtenerDatosTodosLosCursosParaReportes() {
+            const idCursos = [...new Set(cursosDisponiblesNube.map(c => c.idCurso))];
+            if (!idCursos.length) return [];
+            const resultados = await llamarAPI('obtenerCursosMultiples', { idCursos });
+            const porId = {};
+            resultados.forEach(r => { porId[r.idCurso] = r; });
+            return cursosDisponiblesNube
+                .map(catalogo => ({ catalogo, datos: porId[catalogo.idCurso] }))
+                .filter(x => x.datos && x.datos.nucleo && Array.isArray(x.datos.nucleo.estudiantes) && x.datos.nucleo.estudiantes.length)
+                .sort((a, b) => (a.catalogo.nombreVisible || a.catalogo.idCurso).localeCompare(b.catalogo.nombreVisible || b.catalogo.idCurso));
+        }
+
+        // Igual que excelEstudiantesOrdenados(curso), pero a partir de un array de estudiantes crudo
+        // (el de datos.nucleo.estudiantes que devuelve obtenerCursosMultiples) en vez de un curso de
+        // db.cursos — para no depender en nada del curso actualmente cargado en memoria.
+        function excelEstudiantesOrdenadosDeLista(estudiantes) {
+            return [...(estudiantes || [])].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+        }
+
+        // Envoltorio defensivo de calcularTrimestre(): algunas materias (Ámbitos de Desarrollo y
+        // Aprendizaje de Inicial, OVP) NO usan el formato numérico de insumos — guardan códigos
+        // cualitativos (A+ a E-) por ámbito/indicador en un objeto con otra forma. calcularTrimestre()
+        // ya protege contra que le pasen undefined/null, pero no contra un objeto de otra forma sin
+        // `.insumos` como array — ahí truena con "Cannot read properties of undefined (reading
+        // 'filter')". Aquí, para los reportes consolidados (que recorren TODAS las materias de TODOS
+        // los cursos sin distinguir su tipo), se trata cualquier forma inesperada como "sin nota
+        // numérica para este reporte" en vez de fallar — esas materias cualitativas igual se ven bien
+        // en su propia pantalla (Ámbitos/OVP), solo no encajan en esta tabla numérica genérica.
+        function excelTrimestreSeguro(datosTrimestre) {
+            if (!datosTrimestre || typeof datosTrimestre !== 'object' || !Array.isArray(datosTrimestre.insumos)) return calcularTrimestre(null);
+            return calcularTrimestre(datosTrimestre);
+        }
+
+        // Mismo cálculo que excelValorAsignaturaFija (ver más arriba), pero generalizado a CUALQUIER
+        // materia por nombre (no solo las de la lista fija de acompañamiento) — para los reportes
+        // consolidados, que muestran TODAS las materias que de verdad tengan calificaciones guardadas
+        // en Datos_Materias para ese curso, sea cual sea su nombre (así no se pierde ninguna materia de
+        // Básica Superior/Bachillerato, que no usan la lista fija de 2do-7mo EGB).
+        function excelCalcularValorMateriaPeriodo(calificacionesMateria, estId, periodo) {
+            const califs = calificacionesMateria ? calificacionesMateria[estId] : null;
+            if (periodo === 'anual') {
+                const t1 = califs ? excelTrimestreSeguro(califs.t1).notaFinal : '';
+                const t2 = califs ? excelTrimestreSeguro(califs.t2).notaFinal : '';
+                const t3 = califs ? excelTrimestreSeguro(califs.t3).notaFinal : '';
+                const conteo = [t1, t2, t3].filter(v => v !== '').length;
+                const prom = conteo === 3 ? ((parseFloat(t1) + parseFloat(t2) + parseFloat(t3)) / 3) : null;
+                return prom === null ? '-' : `${prom.toFixed(2)} (${obtenerEscalaAlfabetica(prom)})`;
+            } else if (periodo === 'supletorio') {
+                const t1 = califs ? excelTrimestreSeguro(califs.t1).notaFinal : '';
+                const t2 = califs ? excelTrimestreSeguro(califs.t2).notaFinal : '';
+                const t3 = califs ? excelTrimestreSeguro(califs.t3).notaFinal : '';
+                const conteo = [t1, t2, t3].filter(v => v !== '').length;
+                const prom = conteo === 3 ? ((parseFloat(t1) + parseFloat(t2) + parseFloat(t3)) / 3) : null;
+                if (prom === null) return '-';
+                if (prom >= 7) return `${prom.toFixed(2)} (Aprobado, no requiere supletorio)`;
+                const sup = califs ? califs.supletorio : '';
+                return (sup !== '' && sup !== undefined) ? parseFloat(sup).toFixed(2) : '(pendiente)';
+            } else {
+                const valor = califs ? excelTrimestreSeguro(califs[periodo]).notaFinal : '';
+                return valor !== '' ? `${valor} (${obtenerEscalaAlfabetica(valor)})` : '-';
+            }
+        }
+
+        // Envoltorio común de "deshabilitar botón + generar + descargar + rehabilitar botón" para los
+        // 10 reportes consolidados — para no repetir ese mismo try/catch/finally 10 veces.
+        async function excelGenerarReporteConsolidado(botonIdOElemento, nombreArchivoBase, construirHojas) {
+            const XLSXE = window.XLSXConEstilos;
+            if (!XLSXE) { alert('No se pudo cargar el generador de Excel con estilos (revisa tu conexión a internet) e inténtalo de nuevo.'); return; }
+            // Acepta el id de un botón (string, el caso de siempre) o el propio elemento <button> ya
+            // resuelto (lo usa Calificaciones, donde un solo manejador atiende 5 botones distintos —
+            // T1/T2/T3/Anual/Supletorio — y ya recibe "this" directamente en el onclick).
+            const boton = typeof botonIdOElemento === 'string' ? document.getElementById(botonIdOElemento) : (botonIdOElemento || null);
+            const textoOriginal = boton ? boton.innerText : '';
+            if (boton) { boton.disabled = true; boton.innerText = '⏳ Generando (puede tardar varios segundos)...'; }
+            const msg = document.getElementById('reportes-institucionales-mensaje');
+            if (msg) msg.innerText = '';
+            try {
+                const cursosConDatos = await obtenerDatosTodosLosCursosParaReportes();
+                if (!cursosConDatos.length) throw new Error('Ningún curso del plantel tiene todavía estudiantes registrados.');
+                const wb = XLSXE.utils.book_new();
+                const usados = {};
+                construirHojas(XLSXE, wb, usados, cursosConDatos);
+                const nombreArchivo = `${nombreArchivoBase}_${(db.configGeneral.amie || 'Institucion').replace(/\s+/g, '')}.xlsx`;
+                let wbout = XLSXE.write(wb, { type: 'array', bookType: 'xlsx' });
+                wbout = await excelIntentarIncrustarSello(wbout);
+                const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                await guardarBlobComoArchivo(blob, nombreArchivo, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Libro de Excel', '.xlsx');
+                if (msg) { msg.innerText = `✅ Listo — ${cursosConDatos.length} curso(s) incluido(s).`; msg.className = 'text-xs mt-3 text-emerald-700'; }
+            } catch (e) {
+                if (msg) { msg.innerText = '❌ ' + e.message; msg.className = 'text-xs mt-3 text-red-600'; }
+                else alert('No se pudo generar el reporte: ' + e.message);
+            } finally {
+                if (boton) { boton.disabled = false; boton.innerText = textoOriginal; }
+            }
+        }
+
+        // ─────────────────────────── 1 y 2. Directivas consolidadas (PPFF / Estudiantes) ───────────────────────────
+        // Pedido explícito: TODOS los cursos juntos en UNA sola hoja (a diferencia de los demás
+        // reportes de abajo, que van una hoja por curso).
+        function excelExportarDirectivaConsolidada(botonId, claveDirectiva, nombreArchivoBase, tituloHoja, tituloReporte) {
+            return excelGenerarReporteConsolidado(botonId, nombreArchivoBase, (XLSXE, wb, usados, cursosConDatos) => {
+                const filas = [];
+                cursosConDatos.forEach(({ catalogo, datos }) => {
+                    const directiva = (datos.nucleo && datos.nucleo[claveDirectiva]) || { miembros: [] };
+                    const labelCurso = catalogo.nombreVisible || catalogo.idCurso;
+                    (directiva.miembros || []).forEach((m, idx) => {
+                        filas.push([labelCurso, idx + 1, m.dignidad || '', m.nombre || '', m.cedula || '', m.contacto || '', m.representado || '', m.correo || '', m.direccion || '']);
+                    });
+                });
+                excelCrearHojaTablaGeneral(XLSXE, wb, usados, tituloHoja,
+                    `Reporte generado: ${new Date().toLocaleDateString('es-EC')}   |   Cursos con datos: ${cursosConDatos.length}   |   Total de miembros: ${filas.length}`,
+                    tituloReporte,
+                    ['Curso', 'N°', 'Dignidad', 'Apellidos y Nombres', 'Cédula', 'N° Contacto', 'Representado/a', 'Correo Electrónico', 'Dirección'],
+                    filas, [16, 5, 20, 32, 16, 16, 26, 26, 30]);
+            });
+        }
+        function exportarDirectivaPPFFConsolidadaExcel() {
+            return excelExportarDirectivaConsolidada('btn-reporte-directiva-ppff-todos', 'directivaPPFF',
+                'Directiva_PPFF_Todos_Los_Cursos', 'Directiva PPFF', 'DIRECTIVA DE PADRES DE FAMILIA — TODOS LOS CURSOS');
+        }
+        function exportarDirectivaEstudiantesConsolidadaExcel() {
+            return excelExportarDirectivaConsolidada('btn-reporte-directiva-estudiantes-todos', 'directivaEstudiantes',
+                'Directiva_Estudiantes_Todos_Los_Cursos', 'Directiva Estudiantes', 'DIRECTIVA DE ESTUDIANTES — TODOS LOS CURSOS');
+        }
+
+        // ─────────────────────────── 3. Información de Estudiantes consolidada (1 hoja por curso) ───────────────────────────
+        function exportarInfoEstudiantesConsolidadoExcel() {
+            return excelGenerarReporteConsolidado('btn-reporte-info-estudiantes-todos', 'Informacion_Estudiantes_Todos_Los_Cursos', (XLSXE, wb, usados, cursosConDatos) => {
+                cursosConDatos.forEach(({ catalogo, datos }) => {
+                    const labelCurso = catalogo.nombreVisible || catalogo.idCurso;
+                    const estudiantes = excelEstudiantesOrdenadosDeLista(datos.nucleo.estudiantes);
+                    const infoGen = datos.nucleo.infoGeneralEstudiantes || {};
+                    const filas = estudiantes.map((e, idx) => {
+                        const d = infoGen[e.id] || {};
+                        return [idx + 1, e.cedula || '', e.nombre || '', d.dia || '', d.mes || '', d.anio || '', d.lugarNac || '', d.nacionalidad || '', d.grupoEtnico || '', d.discapacidad || '', d.discPct || '', d.repNombre || '', d.repCedula || '', d.repContacto || '', d.parentesco || '', d.contacto2 || '', d.parentesco2 || '', d.correo || '', d.direccion || '', d.observaciones || ''];
+                    });
+                    excelCrearHojaTablaGeneral(XLSXE, wb, usados, labelCurso,
+                        `Código AMIE: ${db.configGeneral.amie || '-'}   |   Año Lectivo: ${db.configGeneral.anioLectivo || '-'}   |   Curso: ${labelCurso}`,
+                        'INFORMACIÓN DE ESTUDIANTES — DATOS GENERALES',
+                        ['N°', 'Cédula', 'Nómina Estudiantes', 'Día Nac.', 'Mes Nac.', 'Año Nac.', 'Lugar Nacimiento', 'Nacionalidad', 'Grupo Étnico', 'Discapacidad', '%', 'Repres. Legal', 'Cédula Repres.', 'N° Contacto', 'Parentesco', 'N° Contacto 2', 'Parentesco 2', 'Correo Electrónico', 'Dirección Domiciliaria', 'Observaciones'],
+                        filas, [5, 14, 32, 8, 8, 8, 18, 16, 16, 14, 6, 26, 16, 14, 14, 14, 14, 26, 30, 26]);
+                });
+            });
+        }
+
+        // ─────────────────────────── 4. Registro Interdisciplinar consolidado (1 hoja por curso) ───────────────────────────
+        // Pedido explícito: "cada curso en una hoja" (a diferencia de la versión de un solo curso, que
+        // reparte T1/T2/T3/Anual/Supletorio en 5 hojas separadas) — aquí van TODOS los periodos de
+        // TODAS las materias de ese curso juntos, como columnas agrupadas por materia, dentro de esa
+        // única hoja. Se listan TODAS las materias que de verdad tengan calificaciones guardadas para
+        // ese curso (Object.keys(datos.materias)), no solo las 5 fijas de acompañamiento de 2do-7mo
+        // EGB — así también cubre Básica Superior/Bachillerato, que tiene muchas más materias propias.
+        const PERIODOS_REGISTRO_CONSOLIDADO = [['t1', 'T1'], ['t2', 'T2'], ['t3', 'T3'], ['anual', 'Anual'], ['supletorio', 'Supletorio']];
+        function exportarRegistroInterdisciplinarConsolidadoExcel() {
+            return excelGenerarReporteConsolidado('btn-reporte-registro-interdisciplinar-todos', 'Registro_Interdisciplinar_Todos_Los_Cursos', (XLSXE, wb, usados, cursosConDatos) => {
+                cursosConDatos.forEach(({ catalogo, datos }) => {
+                    const labelCurso = catalogo.nombreVisible || catalogo.idCurso;
+                    const estudiantes = excelEstudiantesOrdenadosDeLista(datos.nucleo.estudiantes);
+                    const nombresMaterias = Object.keys(datos.materias || {}).sort((a, b) => a.localeCompare(b));
+                    const encabezados = ['N°', 'Cédula', 'Apellidos y Nombres', 'NEE'];
+                    nombresMaterias.forEach(mat => PERIODOS_REGISTRO_CONSOLIDADO.forEach(([, etq]) => encabezados.push(`${mat} (${etq})`)));
+                    if (!nombresMaterias.length) encabezados.push('(Sin materias calificadas todavía)');
+                    const filas = estudiantes.map((e, idx) => {
+                        const fila = [idx + 1, e.cedula || '', e.nombre || '', e.nee || 'Ninguna'];
+                        nombresMaterias.forEach(mat => {
+                            PERIODOS_REGISTRO_CONSOLIDADO.forEach(([clave]) => fila.push(excelCalcularValorMateriaPeriodo(datos.materias[mat], e.id, clave)));
+                        });
+                        if (!nombresMaterias.length) fila.push('-');
+                        return fila;
+                    });
+                    const anchos = [5, 14, 32, 14, ...nombresMaterias.flatMap(() => PERIODOS_REGISTRO_CONSOLIDADO.map(() => 16))];
+                    if (!nombresMaterias.length) anchos.push(30);
+                    excelCrearHojaTablaGeneral(XLSXE, wb, usados, labelCurso,
+                        `Código AMIE: ${db.configGeneral.amie || '-'}   |   Año Lectivo: ${db.configGeneral.anioLectivo || '-'}   |   Curso: ${labelCurso}`,
+                        'REGISTRO INTERDISCIPLINAR — TODAS LAS ASIGNATURAS Y PERIODOS',
+                        encabezados, filas, anchos);
+                });
+            });
+        }
+
+        // ─────────────────────────── 5. Calificaciones consolidadas (1 archivo por periodo, 1 hoja por curso) ───────────────────────────
+        function exportarCalificacionesConsolidadoExcel(botonEl) {
+            const periodo = botonEl.dataset.periodo;
+            const etiqueta = botonEl.dataset.etiqueta;
+            return excelGenerarReporteConsolidado(botonEl, `Calificaciones_${etiqueta.replace(/\s+/g, '_')}_Todos_Los_Cursos`, (XLSXE, wb, usados, cursosConDatos) => {
+                cursosConDatos.forEach(({ catalogo, datos }) => {
+                    const labelCurso = catalogo.nombreVisible || catalogo.idCurso;
+                    const estudiantes = excelEstudiantesOrdenadosDeLista(datos.nucleo.estudiantes);
+                    const nombresMaterias = Object.keys(datos.materias || {}).sort((a, b) => a.localeCompare(b));
+                    const encabezados = ['N°', 'Cédula', 'Apellidos y Nombres', 'NEE', ...nombresMaterias];
+                    if (!nombresMaterias.length) encabezados.push('(Sin materias calificadas todavía)');
+                    const filas = estudiantes.map((e, idx) => {
+                        const fila = [idx + 1, e.cedula || '', e.nombre || '', e.nee || 'Ninguna'];
+                        nombresMaterias.forEach(mat => fila.push(excelCalcularValorMateriaPeriodo(datos.materias[mat], e.id, periodo)));
+                        if (!nombresMaterias.length) fila.push('-');
+                        return fila;
+                    });
+                    const anchos = [5, 14, 32, 14, ...nombresMaterias.map(() => 20)];
+                    if (!nombresMaterias.length) anchos.push(30);
+                    excelCrearHojaTablaGeneral(XLSXE, wb, usados, labelCurso,
+                        `Código AMIE: ${db.configGeneral.amie || '-'}   |   Año Lectivo: ${db.configGeneral.anioLectivo || '-'}   |   Curso: ${labelCurso}`,
+                        `CALIFICACIONES — ${etiqueta.toUpperCase()} (TODAS LAS ASIGNATURAS)`,
+                        encabezados, filas, anchos);
+                });
+            });
+        }
+
+        // ─────────────────────────── 6. Asistencia consolidada (1 hoja por curso, por mes + anual) ───────────────────────────
+        const NOMBRES_MESES_ES_REPORTES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        function exportarAsistenciaConsolidadoExcel() {
+            return excelGenerarReporteConsolidado('btn-reporte-asistencia-todos', 'Asistencia_Todos_Los_Cursos', (XLSXE, wb, usados, cursosConDatos) => {
+                const { anioInicio, anioFin } = obtenerRangoAnioLectivoConfigurado();
+                const diasHabilesTotales = contarDiasHabilesEnRango(new Date(anioInicio, 8, 1), new Date(anioFin, 6, 0, 23, 59, 59));
+                cursosConDatos.forEach(({ catalogo, datos }) => {
+                    const labelCurso = catalogo.nombreVisible || catalogo.idCurso;
+                    const estudiantes = excelEstudiantesOrdenadosDeLista(datos.nucleo.estudiantes);
+                    const asistencia = datos.asistenciaDiaria || {};
+                    const semanas = Object.keys(asistencia).sort();
+
+                    // Agrupa cada semana (su lunes, "YYYY-MM-DD") por mes calendario ("YYYY-MM").
+                    const semanasPorMes = {};
+                    semanas.forEach(semana => {
+                        const mesKey = semana.substring(0, 7);
+                        (semanasPorMes[mesKey] = semanasPorMes[mesKey] || []).push(semana);
+                    });
+                    const mesesKeys = Object.keys(semanasPorMes).sort();
+
+                    const conteosPorMes = {};
+                    const conteosAnual = {};
+                    estudiantes.forEach(e => { conteosAnual[e.id] = { F: 0, FJ: 0, A: 0 }; });
+                    mesesKeys.forEach(mesKey => {
+                        const conteosMes = {};
+                        estudiantes.forEach(e => { conteosMes[e.id] = { F: 0, FJ: 0, A: 0 }; });
+                        semanasPorMes[mesKey].forEach(semana => {
+                            const datosSemana = asistencia[semana] || {};
+                            const lunesSemana = new Date(semana + 'T00:00:00');
+                            DIAS_SEMANA_ASISTENCIA.forEach((dia, offset) => {
+                                const fecha = new Date(lunesSemana); fecha.setDate(fecha.getDate() + offset);
+                                if (esDiaFeriado(formatearFechaYMD(fecha))) return;
+                                estudiantes.forEach(e => {
+                                    const valor = datosSemana[e.id] ? datosSemana[e.id][dia] : '';
+                                    if (!valor) return;
+                                    if (!conteosMes[e.id]) conteosMes[e.id] = { F: 0, FJ: 0, A: 0 };
+                                    conteosMes[e.id][valor] = (conteosMes[e.id][valor] || 0) + 1;
+                                    conteosAnual[e.id][valor] = (conteosAnual[e.id][valor] || 0) + 1;
+                                });
+                            });
+                        });
+                        conteosPorMes[mesKey] = conteosMes;
+                    });
+
+                    const encabezados = ['N°', 'Cédula', 'Apellidos y Nombres'];
+                    mesesKeys.forEach(mesKey => {
+                        const [anio, mes] = mesKey.split('-');
+                        const nombreMes = NOMBRES_MESES_ES_REPORTES[parseInt(mes, 10) - 1] || mesKey;
+                        encabezados.push(`${nombreMes} ${anio} - Faltas`, `${nombreMes} ${anio} - Justif.`, `${nombreMes} ${anio} - Atrasos`);
+                    });
+                    encabezados.push('Total Anual - Faltas', 'Total Anual - Justif.', 'Total Anual - Atrasos', 'Total Anual - Días Asistidos');
+
+                    const filas = estudiantes.map((e, idx) => {
+                        const fila = [idx + 1, e.cedula || '', e.nombre || ''];
+                        mesesKeys.forEach(mesKey => {
+                            const c = conteosPorMes[mesKey][e.id] || { F: 0, FJ: 0, A: 0 };
+                            fila.push(c.F, c.FJ, c.A);
+                        });
+                        const ca = conteosAnual[e.id] || { F: 0, FJ: 0, A: 0 };
+                        const totalFaltasJI = ca.F + ca.FJ;
+                        fila.push(ca.F, ca.FJ, ca.A, Math.max(0, diasHabilesTotales - totalFaltasJI));
+                        return fila;
+                    });
+
+                    const anchos = [5, 14, 32, ...mesesKeys.flatMap(() => [10, 10, 10]), 12, 12, 12, 16];
+                    excelCrearHojaTablaGeneral(XLSXE, wb, usados, labelCurso,
+                        `Código AMIE: ${db.configGeneral.amie || '-'}   |   Año Lectivo: ${db.configGeneral.anioLectivo || '-'}   |   Curso: ${labelCurso}`,
+                        'CONTROL DE ASISTENCIA — POR MES Y TOTAL ANUAL (F=Falta, FJ=Falta Justificada, A=Atraso)',
+                        encabezados, filas, anchos);
+                });
+            });
+        }
+        // ═══════════════ FIN Reportes Institucionales consolidados ═══════════════
 
         // ─────────────────────────── Sello institucional en el Excel ───────────────────────────
         // 2026-07-30: la primera versión releía el .xlsx completo con ExcelJS y lo volvía a escribir
