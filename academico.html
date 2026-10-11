@@ -1493,19 +1493,19 @@
                     <table class="w-full border-collapse text-center">
                         <tr class="bg-slate-300 font-bold uppercase"><td colspan="3" class="p-1 border-b border-slate-800">Niveles de Logro</td></tr>
                         <tr class="bg-slate-200 font-bold uppercase divide-x divide-slate-800 border-b border-slate-800">
-                            <td class="p-1 text-left">Escala Cuantitativa</td><td class="p-1 w-10">Nº</td><td class="p-1 w-12">%</td>
+                            <td class="p-1 text-left" id="ia-escala-titulo">Escala Cuantitativa</td><td class="p-1 w-10">Nº</td><td class="p-1 w-12">%</td>
                         </tr>
                         <tr class="divide-x divide-slate-800 border-b border-slate-700">
-                            <td class="p-1 text-left">Destreza o aprendizaje alcanzado (DA)</td><td class="p-1 font-bold" id="ia-n-da">0</td><td class="p-1 font-bold" id="ia-p-da">0%</td>
+                            <td class="p-1 text-left" id="ia-lbl-da">Destreza o aprendizaje alcanzado (DA)</td><td class="p-1 font-bold" id="ia-n-da">0</td><td class="p-1 font-bold" id="ia-p-da">0%</td>
                         </tr>
                         <tr class="divide-x divide-slate-800 border-b border-slate-700">
-                            <td class="p-1 text-left">Alcanza los aprendizajes (A)</td><td class="p-1 font-bold" id="ia-n-a">0</td><td class="p-1 font-bold" id="ia-p-a">0%</td>
+                            <td class="p-1 text-left" id="ia-lbl-a">Alcanza los aprendizajes (A)</td><td class="p-1 font-bold" id="ia-n-a">0</td><td class="p-1 font-bold" id="ia-p-a">0%</td>
                         </tr>
                         <tr class="divide-x divide-slate-800 border-b border-slate-700">
-                            <td class="p-1 text-left">Está próximo a alcanzar (PA)</td><td class="p-1 font-bold" id="ia-n-pa">0</td><td class="p-1 font-bold" id="ia-p-pa">0%</td>
+                            <td class="p-1 text-left" id="ia-lbl-pa">Está próximo a alcanzar (PA)</td><td class="p-1 font-bold" id="ia-n-pa">0</td><td class="p-1 font-bold" id="ia-p-pa">0%</td>
                         </tr>
-                        <tr class="divide-x divide-slate-800">
-                            <td class="p-1 text-left">No alcanza los aprendizajes (NA)</td><td class="p-1 font-bold" id="ia-n-na">0</td><td class="p-1 font-bold" id="ia-p-na">0%</td>
+                        <tr class="divide-x divide-slate-800" id="ia-fila-na">
+                            <td class="p-1 text-left" id="ia-lbl-na">No alcanza los aprendizajes (NA)</td><td class="p-1 font-bold" id="ia-n-na">0</td><td class="p-1 font-bold" id="ia-p-na">0%</td>
                         </tr>
                     </table>
                     <div class="bg-slate-300 flex flex-col items-center justify-center p-2">
@@ -1520,10 +1520,10 @@
                                 <td class="p-1 text-left">Análisis Promedios</td><td class="p-1 w-10">Nº</td><td class="p-1 w-12">%</td>
                             </tr>
                             <tr class="divide-x divide-slate-800 border-b border-slate-700">
-                                <td class="p-1 text-left">Igual o Superior a <span style="text-decoration: overline;">X</span></td><td class="p-1 font-bold" id="ia-n-superior">0</td><td class="p-1 font-bold" id="ia-p-superior">0%</td>
+                                <td class="p-1 text-left" id="ia-lbl-superior">Igual o Superior a <span style="text-decoration: overline;">X</span></td><td class="p-1 font-bold" id="ia-n-superior">0</td><td class="p-1 font-bold" id="ia-p-superior">0%</td>
                             </tr>
                             <tr class="divide-x divide-slate-800">
-                                <td class="p-1 text-left">Inferiores a <span style="text-decoration: overline;">X</span></td><td class="p-1 font-bold" id="ia-n-inferior">0</td><td class="p-1 font-bold" id="ia-p-inferior">0%</td>
+                                <td class="p-1 text-left" id="ia-lbl-inferior">Inferiores a <span style="text-decoration: overline;">X</span></td><td class="p-1 font-bold" id="ia-n-inferior">0</td><td class="p-1 font-bold" id="ia-p-inferior">0%</td>
                             </tr>
                         </table>
                         <div class="relative w-full h-28 p-1 chart-container-print-safe">
@@ -2992,19 +2992,49 @@
             abrirCambiarClave(true);
         }
 
+        // CORRECCIÓN (2026-10-11): "Cerrar sesión" se sentía lento y a veces había que pulsarlo varias
+        // veces. Causas: (1) cuando NO había nada pendiente por guardar, el botón no se deshabilitaba ni
+        // mostraba nada mientras se esperaba la respuesta del servidor (Apps Script puede tardar
+        // varios segundos solo en responder) — así que cada clic extra lanzaba OTRO cierre de sesión;
+        // (2) si el guardado pendiente fallaba con una excepción, el cierre se abortaba por completo y
+        // el botón quedaba "muerto" hasta pulsarlo de nuevo; (3) se esperaba (await) la respuesta de
+        // cerrarSesion del servidor antes de recargar, aunque ese aviso es solo informativo.
+        // Ahora: un solo cierre a la vez, retroalimentación inmediata en TODOS los botones de cerrar
+        // sesión, el último cambio sigue guardándose antes de salir (igual que antes), y el aviso al
+        // servidor se envía sin esperar su respuesta (keepalive: llega aunque la página se recargue).
+        let cerrandoSesionNube = false;
         async function cerrarSesionNube() {
+            if (cerrandoSesionNube) return; // ya se está cerrando: se ignoran los clics repetidos
+            cerrandoSesionNube = true;
+            const botonesCerrar = document.querySelectorAll('[onclick="cerrarSesionNube()"]');
+            const poner = (txt) => botonesCerrar.forEach(b => { if (!b.dataset.textoOriginal) b.dataset.textoOriginal = b.innerText; b.disabled = true; b.innerText = txt; });
+            poner('⏳ Cerrando sesión...');
             // Si había una nota recién digitada (guardado programado, aún no enviado), se fuerza a
             // que termine de guardarse ANTES de cerrar sesión — así nunca se pierde el último cambio.
             // Esto cubre TANTO el guardado general (calificaciones/núcleo) COMO la asistencia diaria y
             // los horarios, que se guardan por su cuenta con su propio temporizador independiente.
+            // Cada paso va protegido: un fallo al guardar ya se avisa en pantalla (marcarGuardadoError)
+            // y NO debe impedir que la sesión se cierre.
             if (temporizadorGuardadoNube || temporizadorAsistenciaDiaria || temporizadorHorario || temporizadorGuardadoDocente) {
-                document.querySelectorAll('[onclick="cerrarSesionNube()"]').forEach(b => { b.disabled = true; b.dataset.textoOriginal = b.innerText; b.innerText = '⏳ Guardando...'; });
-                await guardarInmediatoNube();
-                await guardarInmediatoAsistenciaDiaria();
-                await guardarInmediatoHorario();
-                if (temporizadorGuardadoDocente) await guardarMisDatosDocenteInmediato();
+                poner('⏳ Guardando cambios...');
+                try { await guardarInmediatoNube(); } catch (e) { /* ya se avisó en pantalla */ }
+                try { await guardarInmediatoAsistenciaDiaria(); } catch (e) { /* idem */ }
+                try { await guardarInmediatoHorario(); } catch (e) { /* idem */ }
+                try { if (temporizadorGuardadoDocente) await guardarMisDatosDocenteInmediato(); } catch (e) { /* idem */ }
+                poner('⏳ Cerrando sesión...');
             }
-            try { await llamarAPI('cerrarSesion', {}); } catch (e) { /* no crítico */ }
+            // Aviso al servidor (borra el token de la hoja de sesiones): informativo, no se espera.
+            const tokenAnterior = sesionActual && sesionActual.token;
+            if (tokenAnterior) {
+                try {
+                    fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ accion: 'cerrarSesion', token: tokenAnterior }),
+                        keepalive: true
+                    }).catch(() => { /* no crítico */ });
+                } catch (e) { /* no crítico */ }
+            }
             sesionActual = null;
             idCursoActivoNube = null;
             cursoCatalogoActivo = null;
@@ -6289,15 +6319,24 @@ ${estilosHtml}
         // ─────────────────────────── 2. Calificaciones por trimestre (asignatura activa) ───────────────────────────
         function excelAgregarCalificacionesTrimestre(XLSXE, wb, usados, periodo, etiqueta) {
             const curso = db.cursos[db.cursoActivoIndex];
+            const cualExcel = esCursoCualitativoElemental(curso); // 2do-4to EGB: letras A+ a E-
             const filas = excelEstudiantesOrdenados(curso).map((e, idx) => {
                 const c = curso.calificaciones[e.id] ? curso.calificaciones[e.id][periodo] : null;
                 const calc = calcularTrimestre(c);
+                if (cualExcel) {
+                    // 2do-4to EGB (calificación cualitativa): todo en letras A+ a E-, con el nivel de logro.
+                    const tiene = calc.notaFinal !== '';
+                    const Lx = (v) => tiene ? numeroALetraCualitativa(v) : '-';
+                    return [idx + 1, e.cedula || '', e.nombre || '', e.nee || 'Ninguna', Lx(calc.promedioInsumos), Lx(calc.promedioEvalRef), Lx(calc.proyectoVal), Lx(calc.notaFinal), tiene ? nivelDestrezaCualitativa(calc.notaFinal).corto : '-'];
+                }
                 const eq = calc.notaFinal !== '' ? obtenerEquivalenciaRGLOEI(calc.notaFinal).sigla : '-';
                 return [idx + 1, e.cedula || '', e.nombre || '', e.nee || 'Ninguna', calc.promedioInsumos, calc.promedioEvalRef, calc.proyectoVal, calc.notaFinal || '-', eq];
             });
             excelCrearHojaTabla(XLSXE, wb, usados, `Calif. ${etiqueta}`, `CALIFICACIONES — ${etiqueta.toUpperCase()} (${curso.asignatura || 'Asignatura'})`,
-                ['N°', 'Cédula', 'Apellidos y Nombres', 'NEE', 'Prom. Insumos /10', 'Eval./Refuerzo /10', 'Proyecto /10', 'Nota Trimestral', 'Equiv.'],
-                filas, [5, 14, 38, 14, 14, 14, 12, 14, 10]);
+                cualExcel
+                    ? ['N°', 'Cédula', 'Apellidos y Nombres', 'NEE', 'Prom. Insumos', 'Eval./Refuerzo', 'Proyecto', 'Calificación Trimestral', 'Nivel de logro']
+                    : ['N°', 'Cédula', 'Apellidos y Nombres', 'NEE', 'Prom. Insumos /10', 'Eval./Refuerzo /10', 'Proyecto /10', 'Nota Trimestral', 'Equiv.'],
+                filas, [5, 14, 38, 14, 14, 14, 12, 14, 14]);
         }
 
         // ─────────────────────────── 3. Registro Interdisciplinar (TODAS las asignaturas) ───────────────────────────
@@ -6315,37 +6354,49 @@ ${estilosHtml}
         function excelValorAsignaturaFija(curso, grupoAsignaturasFijas, nombreAsig, estudiante, periodo) {
             const cursoAsig = grupoAsignaturasFijas.find(c => c.asignatura === nombreAsig);
             const califs = cursoAsig && cursoAsig.calificaciones[estudiante.id];
+            // 2do-4to EGB (2026-10-10): el Registro Interdisciplinar sale en letras A+ a E-; el promedio anual
+            // se redondea a la letra más cercana (igual que en pantalla y en el boletín).
+            const cual = esGradoCualitativoElemental(curso.label);
+            const Lc = (v) => numeroALetraCualitativa(v);
             if (periodo === 'supletorio') {
                 const t1D = califs ? calcularTrimestre(califs.t1).notaFinal : '';
                 const t2D = califs ? calcularTrimestre(califs.t2).notaFinal : '';
                 const t3D = califs ? calcularTrimestre(califs.t3).notaFinal : '';
                 const conteo = [t1D, t2D, t3D].filter(v => v !== '').length;
-                const prom = conteo === 3 ? ((parseFloat(t1D) + parseFloat(t2D) + parseFloat(t3D)) / 3) : null;
+                let prom = conteo === 3 ? ((parseFloat(t1D) + parseFloat(t2D) + parseFloat(t3D)) / 3) : null;
+                if (prom !== null && cual) prom = Math.round(prom);
                 if (prom === null) return '-';
-                if (prom >= 7) return `${prom.toFixed(2)} (Aprobado, no requiere supletorio)`;
+                if (prom >= 7) return cual ? `${Lc(prom)} (Aprobado, no requiere supletorio)` : `${prom.toFixed(2)} (Aprobado, no requiere supletorio)`;
                 const sup = cursoAsig && cursoAsig.supletorios ? cursoAsig.supletorios[estudiante.id] : '';
-                return sup !== '' && sup !== undefined ? parseFloat(sup).toFixed(2) : '(pendiente)';
+                if (sup === '' || sup === undefined) return '(pendiente)';
+                return cual ? Lc(parseFloat(sup)) : parseFloat(sup).toFixed(2);
             } else if (periodo === 'anual') {
                 const t1D = califs ? calcularTrimestre(califs.t1).notaFinal : '';
                 const t2D = califs ? calcularTrimestre(califs.t2).notaFinal : '';
                 const t3D = califs ? calcularTrimestre(califs.t3).notaFinal : '';
                 const conteo = [t1D, t2D, t3D].filter(v => v !== '').length;
-                const prom = conteo === 3 ? ((parseFloat(t1D) + parseFloat(t2D) + parseFloat(t3D)) / 3) : null;
-                return prom === null ? '-' : `${prom.toFixed(2)} (${obtenerEscalaAlfabetica(prom)})`;
+                let prom = conteo === 3 ? ((parseFloat(t1D) + parseFloat(t2D) + parseFloat(t3D)) / 3) : null;
+                if (prom === null) return '-';
+                return cual ? Lc(prom) : `${prom.toFixed(2)} (${obtenerEscalaAlfabetica(prom)})`;
             } else {
                 const valorDoc = califs ? calcularTrimestre(califs[periodo]).notaFinal : '';
-                return valorDoc !== '' ? `${valorDoc} (${obtenerEscalaAlfabetica(valorDoc)})` : '-';
+                if (valorDoc === '') return '-';
+                return cual ? Lc(valorDoc) : `${valorDoc} (${obtenerEscalaAlfabetica(valorDoc)})`;
             }
         }
         function excelValorAsignaturaExterna(curso, indiceAsig, estudiante, periodo) {
             const om = ((curso.otrasMaterias || {})[estudiante.id] || {})[`asig_${indiceAsig}`] || {};
+            const cual = esGradoCualitativoElemental(curso.label);
+            const Lc = (v) => (cual && v !== '-' && v !== '' && v !== undefined && !isNaN(v)) ? numeroALetraCualitativa(v) : v;
             if (periodo === 'anual') {
                 const vals = ['t1', 't2', 't3'].map(p => om[p]).filter(v => v !== '' && v !== undefined && v !== null && !isNaN(v));
-                return vals.length === 3 ? (vals.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / 3).toFixed(2) : '-';
+                if (vals.length !== 3) return '-';
+                const prom = vals.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / 3;
+                return cual ? numeroALetraCualitativa(prom) : prom.toFixed(2);
             } else if (periodo === 'supletorio') {
-                return om.supletorio !== undefined && om.supletorio !== '' ? om.supletorio : '-';
+                return om.supletorio !== undefined && om.supletorio !== '' ? Lc(om.supletorio) : '-';
             } else {
-                return om[periodo] !== undefined && om[periodo] !== '' ? om[periodo] : '-';
+                return om[periodo] !== undefined && om[periodo] !== '' ? Lc(om[periodo]) : '-';
             }
         }
         function excelAgregarRegistroInterdisciplinar(XLSXE, wb, usados, periodo, etiqueta) {
@@ -6405,26 +6456,41 @@ ${estilosHtml}
         // ─────────────────────────── 5. Actas de Calificaciones ───────────────────────────
         function excelAgregarActaTrimestral(XLSXE, wb, usados, periodo, etiqueta) {
             const curso = db.cursos[db.cursoActivoIndex];
+            const cualActaX = esCursoCualitativoElemental(curso); // 2do-4to EGB: letras A+ a E-
             const filas = excelEstudiantesOrdenados(curso).map((e, idx) => {
                 const c = curso.calificaciones[e.id] ? curso.calificaciones[e.id][periodo] : null;
                 const calc = calcularTrimestre(c);
-                const eq = calc.notaFinal !== '' ? obtenerEquivalenciaRGLOEI(calc.notaFinal).sigla : '-';
                 const requiereRefuerzo = calc.notaFinal !== '' ? (parseFloat(calc.notaFinal) < 7 ? 'APREMIANTE' : 'No requiere') : '-';
+                if (cualActaX) {
+                    // 2do-4to EGB: letras A+ a E-; las columnas de 70 %/15 % no aplican como letra.
+                    const tiene = calc.notaFinal !== '';
+                    const Lx = (v) => tiene ? numeroALetraCualitativa(v) : '-';
+                    return [idx + 1, e.nombre || '', e.nee || 'Ninguna', Lx(calc.promedioInsumos), Lx(calc.promedioEvalRef), Lx(calc.proyectoVal), Lx(calc.notaFinal), tiene ? nivelDestrezaCualitativa(calc.notaFinal).corto : '-', requiereRefuerzo];
+                }
+                const eq = calc.notaFinal !== '' ? obtenerEquivalenciaRGLOEI(calc.notaFinal).sigla : '-';
                 return [idx + 1, e.nombre || '', e.nee || 'Ninguna', calc.promedioInsumos, calc.equivIns, calc.promedioEvalRef, calc.equivEvalRef, calc.proyectoVal, calc.equivProy, calc.notaFinal || '-', eq, requiereRefuerzo];
             });
+            if (cualActaX) {
+                excelCrearHojaTabla(XLSXE, wb, usados, `Acta ${etiqueta}`, `ACTA DE CALIFICACIONES — ${etiqueta.toUpperCase()} (CUALITATIVA A+ a E-)`,
+                    ['N°', 'Apellidos y Nombres', 'NEE', 'Prom. Insumos', 'Eval./Refuerzo', 'Proyecto', 'Calificación Trimestral', 'Nivel de logro', 'Plan Refuerzo'],
+                    filas, [5, 36, 14, 14, 14, 12, 16, 14, 16]);
+                return;
+            }
             excelCrearHojaTabla(XLSXE, wb, usados, `Acta ${etiqueta}`, `ACTA DE CALIFICACIONES — ${etiqueta.toUpperCase()}`,
                 ['N°', 'Apellidos y Nombres', 'NEE', 'P.Insumos /10', 'P.Insumos (70%)', 'Eval/Ref /10', 'Eval/Ref (15%)', 'Proyecto /10', 'Proyecto (15%)', 'Nota Trimestral', 'Equiv.', 'Plan Refuerzo'],
                 filas, [5, 36, 14, 12, 12, 12, 12, 12, 12, 14, 10, 16]);
         }
         function excelAgregarActaAnualConsolidada(XLSXE, wb, usados) {
             const curso = db.cursos[db.cursoActivoIndex];
+            const cualAnualX = esCursoCualitativoElemental(curso); // 2do-4to EGB: letras A+ a E-
             const filas = excelEstudiantesOrdenados(curso).map((e, idx) => {
                 const califEst = curso.calificaciones[e.id] || {};
                 const t1 = calcularTrimestre(califEst.t1).notaFinal;
                 const t2 = calcularTrimestre(califEst.t2).notaFinal;
                 const t3 = calcularTrimestre(califEst.t3).notaFinal;
                 const conteo = [t1, t2, t3].filter(v => v !== '').length;
-                const promAnual = conteo === 3 ? ((parseFloat(t1) + parseFloat(t2) + parseFloat(t3)) / 3).toFixed(2) : '';
+                let promAnual = conteo === 3 ? ((parseFloat(t1) + parseFloat(t2) + parseFloat(t3)) / 3).toFixed(2) : '';
+                if (cualAnualX && promAnual !== '') promAnual = Math.round(parseFloat(promAnual)).toFixed(2); // letra más cercana
                 const supletorio = (curso.supletorios && curso.supletorios[e.id] !== undefined) ? curso.supletorios[e.id] : '';
                 let promFinal = promAnual, estado = '-';
                 const pierdeAñoAutomatico = promAnual !== '' && parseFloat(promAnual) < 4.00;
@@ -6438,6 +6504,10 @@ ${estilosHtml}
                         estado = sNum >= 7.00 ? 'PROMOVIDO (SUP)' : 'REPROBADO';
                     } else { estado = 'SUPLETORIO PENDIENTE'; }
                 }
+                if (cualAnualX) {
+                    const Lx = (v) => (v === '' || v === undefined || v === null) ? '-' : numeroALetraCualitativa(v);
+                    return [idx + 1, e.nombre || '', e.nee || 'Ninguna', Lx(t1), Lx(t2), Lx(t3), Lx(promAnual), Lx(supletorio), Lx(promFinal), estado];
+                }
                 return [idx + 1, e.nombre || '', e.nee || 'Ninguna', t1 || '-', t2 || '-', t3 || '-', promAnual || '-', supletorio || '-', promFinal || '-', estado];
             });
             excelCrearHojaTabla(XLSXE, wb, usados, 'Acta Consolidado Anual', 'ACTA DE CALIFICACIONES — CUADRO CONSOLIDADO ANUAL',
@@ -6448,6 +6518,7 @@ ${estilosHtml}
         // ─────────────────────────── 6. Informe de Asignatura ───────────────────────────
         function excelAgregarInformeAsignatura(XLSXE, wb, usados, periodo, etiqueta) {
             const curso = db.cursos[db.cursoActivoIndex];
+            const cualInfX = esCursoCualitativoElemental(curso); // 2do-4to EGB: letras A+ a E-
             let notas = [];
             excelEstudiantesOrdenados(curso).forEach(e => {
                 let notaFinal = '';
@@ -6461,6 +6532,7 @@ ${estilosHtml}
                     const t3 = calcularTrimestre(califEst.t3).notaFinal;
                     if ([t1, t2, t3].every(v => v !== '')) {
                         let anual = (parseFloat(t1) + parseFloat(t2) + parseFloat(t3)) / 3;
+                        if (cualInfX) anual = Math.round(anual);
                         if (periodo === 'anual_supletorio' && curso.supletorios && curso.supletorios[e.id] !== undefined && curso.supletorios[e.id] !== '' && anual < 7) {
                             const sup = parseFloat(curso.supletorios[e.id]);
                             anual = sup >= 7 ? 7 : anual;
@@ -6475,6 +6547,24 @@ ${estilosHtml}
             const nElemental = notas.filter(n => n >= 4.01 && n < 7).length;
             const nInferior = notas.filter(n => n <= 4).length;
             const promedioCurso = notas.length ? (notas.reduce((a, b) => a + b, 0) / notas.length).toFixed(2) : '-';
+            // 2do-4to EGB: en vez de DA/A/PA/NA se cuentan los 3 niveles de logro de la tabla cualitativa.
+            const nAlcanzado = notas.filter(n => Math.round(n) >= 7).length;
+            const nEnProceso = notas.filter(n => Math.round(n) >= 5 && Math.round(n) < 7).length;
+            const nIniciado = notas.filter(n => Math.round(n) < 5).length;
+            const estadisticasX = cualInfX ? [
+                ['N° estudiantes con calificación', notas.length],
+                ['Destreza o aprendizaje alcanzado (A+ a B-)', nAlcanzado],
+                ['Destreza o aprendizaje en proceso de desarrollo (C+ y C-)', nEnProceso],
+                ['Destreza o aprendizaje iniciado (D+ a E-)', nIniciado],
+                ['Promedio del curso', notas.length ? numeroALetraCualitativa(promedioCurso) : '-']
+            ] : [
+                ['N° estudiantes con nota', notas.length],
+                ['Domina los aprendizajes (9.00 - 10.00) — DA', nSuperior],
+                ['Alcanza los aprendizajes (7.00 - 8.99) — A', nSatisfactorio],
+                ['Próximo a alcanzar (4.01 - 6.99) — PA', nElemental],
+                ['No alcanza los aprendizajes (≤ 4.00) — NA', nInferior],
+                ['Promedio del curso', promedioCurso]
+            ];
             const bloques = [
                 { titulo: 'DATOS GENERALES', campos: [
                     ['Unidad Educativa', db.configGeneral.ue || '-'],
@@ -6483,14 +6573,7 @@ ${estilosHtml}
                     ['Docente', db.configGeneral.docente || '-'],
                     ['Periodo', etiqueta]
                 ]},
-                { titulo: 'ESTADÍSTICAS DEL GRUPO', campos: [
-                    ['N° estudiantes con nota', notas.length],
-                    ['Domina los aprendizajes (9.00 - 10.00) — DA', nSuperior],
-                    ['Alcanza los aprendizajes (7.00 - 8.99) — A', nSatisfactorio],
-                    ['Próximo a alcanzar (4.01 - 6.99) — PA', nElemental],
-                    ['No alcanza los aprendizajes (≤ 4.00) — NA', nInferior],
-                    ['Promedio del curso', promedioCurso]
-                ]}
+                { titulo: 'ESTADÍSTICAS DEL GRUPO', campos: estadisticasX }
             ];
             excelCrearHojaFormulario(XLSXE, wb, usados, `Inf. Asignatura ${etiqueta}`, `INFORME DE ASIGNATURA — ${etiqueta.toUpperCase()}`, bloques);
         }
@@ -6507,8 +6590,9 @@ ${estilosHtml}
             const encabezados = ['N°', 'Apellidos y Nombres', ...nombresAsignaturas, 'Promedio General'];
             const filas = estudiantes.map((e, idx) => {
                 const datos = calcularDatosAsignaturasBoletin(curso, e.id, 'anual');
-                const valores = (datos.filasAsignaturas || []).map(f => f.esOVP ? (f.cualitativaOVP || '-') : (f.nota || '-'));
-                return [idx + 1, e.nombre || '', ...valores, datos.promedioGeneral || '-'];
+                const valores = (datos.filasAsignaturas || []).map(f => f.esOVP ? (f.cualitativaOVP || '-') : (datos.esCualitativoElemental ? (notaParaMostrarSegunGrado(f.nota, curso.label) || '-') : (f.nota || '-')));
+                const promGen = datos.esCualitativoElemental ? notaParaMostrarSegunGrado(datos.promedioGeneral, curso.label) : datos.promedioGeneral;
+                return [idx + 1, e.nombre || '', ...valores, promGen || '-'];
             });
             excelCrearHojaTabla(XLSXE, wb, usados, 'Boletín (Resumen Anual)', 'BOLETÍN DEL ESTUDIANTE — RESUMEN ANUAL, TODAS LAS ASIGNATURAS',
                 encabezados, filas, [5, 34, ...nombresAsignaturas.map(() => 14), 16]);
@@ -6729,13 +6813,31 @@ ${estilosHtml}
             return calcularTrimestre(datosTrimestre);
         }
 
+        // Versión cualitativa (2do-4to EGB) de excelCalcularValorMateriaPeriodo: devuelve solo la letra.
+        function excelValorMateriaPeriodoCualitativo(califs, periodo) {
+            const nf = (t) => califs ? excelTrimestreSeguro(t).notaFinal : '';
+            if (periodo === 'anual' || periodo === 'supletorio') {
+                const t1 = nf(califs && califs.t1), t2 = nf(califs && califs.t2), t3 = nf(califs && califs.t3);
+                if ([t1, t2, t3].filter(v => v !== '').length !== 3) return '-';
+                const prom = Math.round((parseFloat(t1) + parseFloat(t2) + parseFloat(t3)) / 3);
+                if (periodo === 'anual') return numeroALetraCualitativa(prom);
+                if (prom >= 7) return `${numeroALetraCualitativa(prom)} (Aprobado, no requiere supletorio)`;
+                const sup = califs ? califs.supletorio : '';
+                return (sup !== '' && sup !== undefined && !isNaN(sup)) ? numeroALetraCualitativa(parseFloat(sup)) : '(pendiente)';
+            }
+            const valor = nf(califs && califs[periodo]);
+            return valor !== '' ? numeroALetraCualitativa(valor) : '-';
+        }
+
         // Mismo cálculo que excelValorAsignaturaFija (ver más arriba), pero generalizado a CUALQUIER
         // materia por nombre (no solo las de la lista fija de acompañamiento) — para los reportes
         // consolidados, que muestran TODAS las materias que de verdad tengan calificaciones guardadas
         // en Datos_Materias para ese curso, sea cual sea su nombre (así no se pierde ninguna materia de
         // Básica Superior/Bachillerato, que no usan la lista fija de 2do-7mo EGB).
-        function excelCalcularValorMateriaPeriodo(calificacionesMateria, estId, periodo) {
+        function excelCalcularValorMateriaPeriodo(calificacionesMateria, estId, periodo, nombreGrado) {
             const califs = calificacionesMateria ? calificacionesMateria[estId] : null;
+            // 2do-4to EGB: en estos reportes consolidados la nota va como letra A+ a E-.
+            if (esGradoCualitativoElemental(nombreGrado)) return excelValorMateriaPeriodoCualitativo(califs, periodo);
             if (periodo === 'anual') {
                 const t1 = califs ? excelTrimestreSeguro(califs.t1).notaFinal : '';
                 const t2 = califs ? excelTrimestreSeguro(califs.t2).notaFinal : '';
@@ -6861,7 +6963,7 @@ ${estilosHtml}
                     const filas = estudiantes.map((e, idx) => {
                         const fila = [idx + 1, e.cedula || '', e.nombre || '', e.nee || 'Ninguna'];
                         nombresMaterias.forEach(mat => {
-                            PERIODOS_REGISTRO_CONSOLIDADO.forEach(([clave]) => fila.push(excelCalcularValorMateriaPeriodo(datos.materias[mat], e.id, clave)));
+                            PERIODOS_REGISTRO_CONSOLIDADO.forEach(([clave]) => fila.push(excelCalcularValorMateriaPeriodo(datos.materias[mat], e.id, clave, catalogo.grado)));
                         });
                         if (!nombresMaterias.length) fila.push('-');
                         return fila;
@@ -6889,7 +6991,7 @@ ${estilosHtml}
                     if (!nombresMaterias.length) encabezados.push('(Sin materias calificadas todavía)');
                     const filas = estudiantes.map((e, idx) => {
                         const fila = [idx + 1, e.cedula || '', e.nombre || '', e.nee || 'Ninguna'];
-                        nombresMaterias.forEach(mat => fila.push(excelCalcularValorMateriaPeriodo(datos.materias[mat], e.id, periodo)));
+                        nombresMaterias.forEach(mat => fila.push(excelCalcularValorMateriaPeriodo(datos.materias[mat], e.id, periodo, catalogo.grado)));
                         if (!nombresMaterias.length) fila.push('-');
                         return fila;
                     });
@@ -8609,6 +8711,10 @@ ${estilosHtml}
 
             const periodo = selPeriodo.value;
             const datos = obtenerClaveActaJunta(periodo);
+            // 2do-4to EGB (2026-10-10): el Acta de Junta presenta las calificaciones como letra A+ a E-
+            // (mínimo para aprobar: B-; "menor a 7" = C+ o menos; "menor a 4" = D- o menos).
+            const cualJ = esGradoCualitativoElemental(curso.label);
+            const LJ = (n) => cualJ ? numeroALetraCualitativa(n) : n.toFixed(2);
 
             const etiquetas = { t1: 'ACTA - 1er Trimestre', t2: 'ACTA - 2do Trimestre', anual: 'ACTA - Anual', supletorio: 'ACTA - Luego del Supletorio' };
             document.getElementById('acta-junta-print-ue').innerText = db.configGeneral.ue || 'UNIDAD EDUCATIVA NO CONFIGURADA';
@@ -8724,8 +8830,8 @@ ${estilosHtml}
                 if(noPromovidosJunta.length > 0) {
                     bloqueNoPromJunta.classList.remove('hidden');
                     listaNoPromJuntaEl.innerHTML = noPromovidosJunta.map(np => np.motivo === 'supletorio'
-                        ? `<li>• <strong>${np.nombre}</strong> no es promovido/a: rindió el examen supletorio de ${np.asignaturas.map(a => `<strong>${a}</strong>`).join(', ')} y obtuvo una nota inferior a 7, por lo que pierde el año.</li>`
-                        : `<li>• <strong>${np.nombre}</strong> no es promovido/a: obtuvo un promedio anual inferior a 4 en ${np.asignaturas.map(a => `<strong>${a}</strong>`).join(', ')}, por lo que no puede presentarse al examen supletorio en ninguna materia.</li>`
+                        ? `<li>• <strong>${np.nombre}</strong> no es promovido/a: rindió el examen supletorio de ${np.asignaturas.map(a => `<strong>${a}</strong>`).join(', ')} y obtuvo una calificación inferior a ${cualJ ? 'B-' : '7'}, por lo que pierde el año.</li>`
+                        : `<li>• <strong>${np.nombre}</strong> no es promovido/a: obtuvo un promedio anual inferior a ${cualJ ? 'D+' : '4'} en ${np.asignaturas.map(a => `<strong>${a}</strong>`).join(', ')}, por lo que no puede presentarse al examen supletorio en ninguna materia.</li>`
                     ).join('');
                 } else {
                     bloqueNoPromJunta.classList.add('hidden');
@@ -8784,7 +8890,7 @@ ${estilosHtml}
                         if(n !== null) { sumaNotasPorAsignatura[colIdx] += n; conteoNotasPorAsignatura[colIdx]++; }
                         const aprobado = n !== null && n >= 7;
                         casosEstudiante++; contadorCasosPorAsignatura[colIdx]++;
-                        return `<td class="p-1.5 text-center text-[12px] ${aprobado ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'} font-bold">${n !== null ? n.toFixed(2) : '-'}</td>`;
+                        return `<td class="p-1.5 text-center text-[12px] ${aprobado ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'} font-bold">${n !== null ? LJ(n) : '-'}</td>`;
                     }
                     if(n !== null) {
                         sumaNotasPorAsignatura[colIdx] += n;
@@ -8795,7 +8901,7 @@ ${estilosHtml}
                     // Solo se muestra el valor de la nota cuando representa un caso de riesgo (< 7);
                     // las calificaciones normales se dejan en blanco, ya que esta tabla es específicamente
                     // para identificar problemas, no un resumen de todas las notas del curso.
-                    return `<td class="p-1.5 text-center text-[12px] ${enRiesgo ? 'bg-red-100 font-bold text-red-800' : ''}">${enRiesgo ? n.toFixed(2) : ''}</td>`;
+                    return `<td class="p-1.5 text-center text-[12px] ${enRiesgo ? 'bg-red-100 font-bold text-red-800' : ''}">${enRiesgo ? LJ(n) : ''}</td>`;
                 }).join('');
 
                 tbodyRiesgo.innerHTML += `
@@ -8820,11 +8926,11 @@ ${estilosHtml}
             const bloqueRefuerzo = document.getElementById('acta-junta-bloque-refuerzo');
             const bloqueAcompanamiento = document.getElementById('acta-junta-bloque-acompanamiento');
             if(esVistaSupletorio) {
-                tituloEl31.innerText = '3.1 Notas del Examen Supletorio (mínimo 7 para ser promovido)';
+                tituloEl31.innerText = cualJ ? '3.1 Calificaciones del Examen Supletorio (mínimo B- para ser promovido)' : '3.1 Notas del Examen Supletorio (mínimo 7 para ser promovido)';
                 bloqueRefuerzo.classList.add('hidden');
                 bloqueAcompanamiento.classList.add('hidden');
             } else {
-                tituloEl31.innerText = '3.1 Listado de estudiantes con calificación por asignatura menor a 7';
+                tituloEl31.innerText = cualJ ? '3.1 Listado de estudiantes con calificación por asignatura de C+ a E-' : '3.1 Listado de estudiantes con calificación por asignatura menor a 7';
                 bloqueRefuerzo.classList.remove('hidden');
                 bloqueAcompanamiento.classList.remove('hidden');
             }
@@ -8866,14 +8972,14 @@ ${estilosHtml}
                         numeroFila++;
                         const nombreAsigFila = nombresAsignaturas[colIdx];
                         const textoResolucion = n !== null
-                            ? `No es promovido/a: obtuvo ${n.toFixed(2)} (inferior a 7) en el examen supletorio de ${nombreAsigFila}.`
+                            ? `No es promovido/a: obtuvo ${LJ(n)} (inferior a ${cualJ ? 'B-' : '7'}) en el examen supletorio de ${nombreAsigFila}.`
                             : `Nota de supletorio de ${nombreAsigFila} aún pendiente de digitar.`;
                         tbodyReprobados.innerHTML += `
                         <tr class="border-b divide-x">
                             <td class="p-1 text-center font-bold text-slate-400">${numeroFila}</td>
                             <td class="p-1 text-left uppercase">${fila.est.nombre}</td>
                             <td class="p-1 text-left uppercase">${nombreAsigFila}</td>
-                            <td class="p-1 text-center font-bold text-red-700">${n !== null ? n.toFixed(2) : 'Pendiente'}</td>
+                            <td class="p-1 text-center font-bold text-red-700">${n !== null ? LJ(n) : 'Pendiente'}</td>
                             <td class="p-1 text-left text-red-800">${textoResolucion}</td>
                         </tr>`;
                     });
@@ -8902,12 +9008,12 @@ ${estilosHtml}
                     tbodyInforme.innerHTML += `
                     <tr class="border-b divide-x">
                         <td class="p-1 text-left uppercase">${nombre}</td>
-                        <td class="p-1 text-center font-bold">${promedio !== null ? promedio.toFixed(2) : '-'}</td>
+                        <td class="p-1 text-center font-bold">${promedio !== null ? LJ(promedio) : '-'}</td>
                         <td class="p-1 text-center">${contadorCasosPorAsignatura[i]}</td>
                         <td class="p-1 text-center">${pctDificultad}</td>
                     </tr>`;
                 });
-                const promedioCurso = materiasConDato > 0 ? (sumaPromediosCurso / materiasConDato).toFixed(2) : '-';
+                const promedioCurso = materiasConDato > 0 ? LJ(sumaPromediosCurso / materiasConDato) : '-';
                 tbodyInforme.innerHTML += `
                 <tr class="bg-slate-200 font-black divide-x">
                     <td class="p-1 text-left">PROMEDIO CURSO</td>
@@ -9508,27 +9614,112 @@ ${estilosHtml}
             return { sumaT1, sumaT2, sumaT3, anualCod: obtenerEscalaAlfabetica(promedioSobre10) };
         }
 
+        // ═══════ CALIFICACIÓN CUALITATIVA DE 2do, 3ro y 4to EGB (nueva normativa, 2026-10-10) ═══════
+        // En estos 3 grados TODAS las asignaturas (salvo OVP, que ya tiene su propia matriz cualitativa)
+        // se califican con la escala A+ a E-, no con números: se digitan en los MISMOS campos de
+        // siempre (10 insumos, Eval., Ref., Proy., REF) pero eligiendo la letra de una lista
+        // desplegable. Equivalencias institucionales: A+=10 A-=9 B+=8 B-=7 C+=6 C-=5 D+=4 D-=3 E+=2 E-=1.
+        //   • A+ a B-  → "Destreza o aprendizaje alcanzado"          (no ingresa a Plan de Refuerzo)
+        //   • C+ y C-  → "Destreza o aprendizaje en proceso de desarrollo"  ┐ ingresan a Plan de
+        //   • D+ a E-  → "Destreza o aprendizaje iniciado"                  ┘ Refuerzo (E- a C+)
+        // Los promedios se calculan con esos equivalentes y el resultado se REDONDEA al entero más
+        // cercano para volver a convertirlo a letra (ver calcularTrimestre). 5to EGB en adelante sigue
+        // siendo 100% numérico, sin ningún cambio.
+        const GRADOS_CUALITATIVOS_ELEMENTAL = ['2do EGB', '3ro EGB', '4to EGB'];
+        const LETRA_A_NUMERO_CUALITATIVA = { 'A+': 10, 'A-': 9, 'B+': 8, 'B-': 7, 'C+': 6, 'C-': 5, 'D+': 4, 'D-': 3, 'E+': 2, 'E-': 1 };
+        function esGradoCualitativoElemental(nombreGrado) {
+            return GRADOS_CUALITATIVOS_ELEMENTAL.includes(nombreGrado);
+        }
+        // Curso ACTIVO en pantalla: de 2do a 4to EGB y que NO sea OVP (esa materia tiene su propia
+        // matriz cualitativa de 5 indicadores).
+        function esCursoCualitativoElemental(curso) {
+            return !!(curso && esGradoCualitativoElemental(curso.label) && !esCursoDeOVP(curso));
+        }
+        function esNotaLetraCualitativa(v) {
+            return typeof v === 'string' && LETRA_A_NUMERO_CUALITATIVA[v.trim()] !== undefined;
+        }
+        // Convierte una nota (letra A+..E- o número) a número; devuelve null si está vacía/inválida.
+        function notaLetraONumero(v) {
+            if (v === '' || v === null || v === undefined) return null;
+            if (esNotaLetraCualitativa(v)) return LETRA_A_NUMERO_CUALITATIVA[v.trim()];
+            return isNaN(v) ? null : parseFloat(v);
+        }
+        // Número (cualquier decimal) → letra, redondeando al entero más cercano (1 a 10). '-' si no hay nota.
+        function numeroALetraCualitativa(n) {
+            return obtenerEscalaAlfabetica(n);
+        }
+        // Nivel de logro de una nota (letra o número) según la tabla institucional.
+        function nivelDestrezaCualitativa(nota) {
+            const n = notaLetraONumero(nota);
+            if (n === null) return { corto: '-', largo: '-' };
+            const r = Math.max(1, Math.min(10, Math.round(n)));
+            if (r >= 7) return { corto: 'Alcanzado', largo: 'Destreza o aprendizaje alcanzado' };
+            if (r >= 5) return { corto: 'En proceso', largo: 'Destreza o aprendizaje en proceso de desarrollo' };
+            return { corto: 'Iniciado', largo: 'Destreza o aprendizaje iniciado' };
+        }
+        // Para reportes/pantallas que reciben una nota ya calculada (número o texto numérico): en 2do-4to EGB
+        // la devuelve como letra; en cualquier otro grado la deja exactamente como venía.
+        function notaParaMostrarSegunGrado(valor, nombreGrado) {
+            if (!esGradoCualitativoElemental(nombreGrado)) return valor;
+            if (valor === '' || valor === undefined || valor === null || valor === '-') return valor;
+            const n = notaLetraONumero(valor);
+            return n === null ? valor : numeroALetraCualitativa(n);
+        }
+        // Lista desplegable A+ a E- para una celda de calificación.
+        function htmlSelectNotaLetra(valorActual, onchange, claseExtra, deshabilitado, titulo) {
+            const actual = valorActual === undefined || valorActual === null ? '' : String(valorActual).trim();
+            // Si la celda trae un NÚMERO guardado de antes (por ejemplo notas digitadas como 9 en un grado
+            // que ahora es cualitativo), se muestra como su letra equivalente — sin perder el dato.
+            const letraActual = esNotaLetraCualitativa(actual) ? actual : (actual !== '' && !isNaN(actual) ? obtenerEscalaAlfabetica(actual) : '');
+            const opciones = ['<option value="">—</option>'].concat(Object.keys(LETRA_A_NUMERO_CUALITATIVA).map(l => `<option value="${l}" ${l === letraActual ? 'selected' : ''}>${l}</option>`)).join('');
+            return `<select onchange="${onchange}" class="w-full text-center border-0 bg-transparent font-bold text-xs ${claseExtra || ''} ${deshabilitado ? 'bg-slate-100 cursor-not-allowed' : ''}" ${deshabilitado ? `disabled title="${titulo || ''}"` : ''}>${opciones}</select>`;
+        }
+
+        // NUEVA NORMATIVA DE REFUERZO ACADÉMICO (2026-10-10), 2do EGB a 3ro BGU, los 3 trimestres, tanto
+        // para Eval./Ref. (Ev/Ref /10) como para Proy./RefP (Proy/RefP /10):
+        //  • Nota inicial de 7,00 a 8,99 + refuerzo rendido → se PROMEDIAN nota inicial y refuerzo; el
+        //    resultado es la nueva nota, con un tope de 9,00.
+        //  • Nota inicial de 0,00 a 6,99 + refuerzo rendido → se PROMEDIAN; el resultado es la nueva
+        //    nota, con un tope de 7,00.
+        //  • Nota inicial de 9,00 o más → no aplica refuerzo; queda la nota inicial.
+        // Se conserva la garantía de siempre: el refuerzo nunca puede dejar la nota por debajo de la
+        // inicial (si el promedio saliera menor, se mantiene la inicial). El 15% de Ev/Ref y de
+        // Proy/RefP y la nota final se calculan igual que antes, sobre este resultado.
+        function aplicarNormativaRefuerzo(notaInicial, notaRefuerzo) {
+            if (notaInicial >= 9) return notaInicial;
+            const tope = notaInicial >= 7 ? 9 : 7;
+            const promedio = (notaInicial + notaRefuerzo) / 2;
+            return Math.max(notaInicial, Math.min(promedio, tope));
+        }
+
         function calcularTrimestre(datosEstudiante) {
             if(!datosEstudiante) return { promedioInsumos: '0.00', equivIns: '0.00', promedioEvalRef: '0.00', equivEvalRef: '0.00', proyectoVal: '0.00', equivProy: '0.00', notaFinal: '' };
-            let insumosValidos = datosEstudiante.insumos.filter(v => v !== '' && v !== null && !isNaN(v));
+            // Calificación cualitativa (2do-4to EGB, 2026-10-10): si algún campo trae una letra A+..E-, se
+            // trabaja con sus equivalentes numéricos y TODOS los resultados intermedios y la nota final se
+            // redondean al entero más cercano — así cada columna corresponde exactamente a una letra, y
+            // cualquier pantalla/reporte que compare contra 7 (Plan de Refuerzo, supletorio) coincide con
+            // la letra mostrada (C+ = 6 → refuerzo; B- = 7 → no). El resultado SIGUE siendo texto numérico
+            // (ej. "9.00"), por eso todo lo que ya consumía calcularTrimestre sigue funcionando igual.
+            const camposSueltos = [datosEstudiante.sumativa, datosEstudiante.refuerzo, datosEstudiante.proyecto, datosEstudiante.refuerzoProyecto];
+            const modoCualitativo = datosEstudiante.insumos.some(esNotaLetraCualitativa) || camposSueltos.some(esNotaLetraCualitativa);
+            const aNumero = (v) => esNotaLetraCualitativa(v) ? LETRA_A_NUMERO_CUALITATIVA[v.trim()] : v;
+            let insumosValidos = datosEstudiante.insumos.map(aNumero).filter(v => v !== '' && v !== null && !isNaN(v));
             let promedioInsumos = 0;
             if(insumosValidos.length > 0) {
                 promedioInsumos = insumosValidos.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / insumosValidos.length;
             }
-            // Evaluación Sumativa (EVAL) y Refuerzo (REF): regla institucional (actualizada 2026-08-07)
-            // — si el Refuerzo es igual o MAYOR a la Evaluación, la nota Ev/Ref pasa a ser
-            // directamente la nota del Refuerzo (ya NO se promedia con Eval); si el Refuerzo es MENOR
-            // a la Evaluación, no cambia nada — se mantiene la nota de Evaluación tal cual (el
-            // refuerzo nunca puede bajar la nota). Si solo uno de los dos está digitado, se usa ese
-            // valor directamente (no se penaliza por el campo vacío).
-            let sumativaTxt = datosEstudiante.sumativa;
-            let refuerzoTxt = datosEstudiante.refuerzo;
+            if (modoCualitativo) promedioInsumos = Math.round(promedioInsumos);
+            // Evaluación Sumativa (EVAL) y Refuerzo (REF): NUEVA NORMATIVA (2026-10-10), 2do EGB a 3ro
+            // BGU — ver aplicarNormativaRefuerzo() justo arriba de esta función. Si solo uno de los dos
+            // está digitado, se usa ese valor directamente (no se penaliza por el campo vacío).
+            let sumativaTxt = aNumero(datosEstudiante.sumativa);
+            let refuerzoTxt = aNumero(datosEstudiante.refuerzo);
             const esNumeroValido = (v) => v !== '' && v !== undefined && v !== null && !isNaN(v);
             const sumativaNum = esNumeroValido(sumativaTxt) ? parseFloat(sumativaTxt) : null;
             const refuerzoNum = esNumeroValido(refuerzoTxt) ? parseFloat(refuerzoTxt) : null;
             let promedioEvalRef;
             if (sumativaNum !== null && refuerzoNum !== null) {
-                promedioEvalRef = (refuerzoNum >= sumativaNum) ? refuerzoNum : sumativaNum;
+                promedioEvalRef = aplicarNormativaRefuerzo(sumativaNum, refuerzoNum);
             } else if (sumativaNum !== null) {
                 promedioEvalRef = sumativaNum;
             } else if (refuerzoNum !== null) {
@@ -9536,13 +9727,14 @@ ${estilosHtml}
             } else {
                 promedioEvalRef = 0;
             }
-            let proyectoTxt = datosEstudiante.proyecto;
-            let refuerzoProyectoTxt = datosEstudiante.refuerzoProyecto;
+            if (modoCualitativo) promedioEvalRef = Math.round(promedioEvalRef);
+            let proyectoTxt = aNumero(datosEstudiante.proyecto);
+            let refuerzoProyectoTxt = aNumero(datosEstudiante.refuerzoProyecto);
             const proyectoNum = esNumeroValido(proyectoTxt) ? parseFloat(proyectoTxt) : null;
             const refuerzoProyectoNum = esNumeroValido(refuerzoProyectoTxt) ? parseFloat(refuerzoProyectoTxt) : null;
             let proyRefP;
             if (proyectoNum !== null && refuerzoProyectoNum !== null) {
-                proyRefP = (refuerzoProyectoNum >= proyectoNum) ? refuerzoProyectoNum : proyectoNum;
+                proyRefP = aplicarNormativaRefuerzo(proyectoNum, refuerzoProyectoNum);
             } else if (proyectoNum !== null) {
                 proyRefP = proyectoNum;
             } else if (refuerzoProyectoNum !== null) {
@@ -9550,13 +9742,16 @@ ${estilosHtml}
             } else {
                 proyRefP = 0;
             }
+            if (modoCualitativo) proyRefP = Math.round(proyRefP);
 
             let equivIns = promedioInsumos * 0.70;
             let equivEvalRef = promedioEvalRef * 0.15;
             let equivProy = proyRefP * 0.15;
 
             let notaFinal = equivIns + equivEvalRef + equivProy;
-            return {
+            if (modoCualitativo) notaFinal = Math.round(notaFinal);
+            const hayDatos = insumosValidos.length > 0 || datosEstudiante.sumativa!=='' || datosEstudiante.refuerzo!=='' || datosEstudiante.proyecto!=='' || datosEstudiante.refuerzoProyecto!=='';
+            const resultado = {
                 promedioInsumos: promedioInsumos.toFixed(2),
                 equivIns: equivIns.toFixed(2),
                 promedioEvalRef: promedioEvalRef.toFixed(2),
@@ -9564,8 +9759,10 @@ ${estilosHtml}
                 proyectoVal: proyRefP.toFixed(2),
                 equivProy: equivProy.toFixed(2),
                 sumativaReal: promedioEvalRef,
-                notaFinal: (insumosValidos.length > 0 || datosEstudiante.sumativa!=='' || datosEstudiante.refuerzo!=='' || datosEstudiante.proyecto!=='' || datosEstudiante.refuerzoProyecto!=='') ? notaFinal.toFixed(2) : ''
+                notaFinal: hayDatos ? notaFinal.toFixed(2) : '',
+                esCualitativo: modoCualitativo
             };
+            return resultado;
         }
 
         function renderizarTodo() {
@@ -9716,6 +9913,13 @@ ${estilosHtml}
                 return;
             }
 
+            // 2do-4to EGB (nueva normativa 2026-10-10): mismo cuadro de digitación, pero cada nota se elige
+            // de una lista desplegable A+ a E- y los promedios se muestran también como letra.
+            if(esCursoCualitativoElemental(curso)) {
+                renderizarTablaTrimestreCualitativaElemental(t, tabla);
+                return;
+            }
+
             // Curso normal: restaura el encabezado numérico estándar (por si esta tabla se usó antes
             // para un curso de OVP y quedó con el encabezado cualitativo) y arma el cuerpo como siempre.
             tabla.innerHTML = THEAD_TRIMESTRE_NORMAL + `<tbody id="tabla-t${t}-body" class="divide-y text-center"></tbody>`;
@@ -9749,6 +9953,98 @@ ${estilosHtml}
                     <td id="cual-${tKey}-${est.id}" class="p-1 font-black text-slate-700 bg-slate-100">${obtenerEquivalenciaRGLOEI(calc.notaFinal).sigla}</td>
                 </tr>`;
             });
+        }
+
+        // ═══════ Cuadro de digitación CUALITATIVO de 2do, 3ro y 4to EGB (2026-10-10) ═══════
+        // Misma estructura de siempre (10 insumos, Eval., Ref., Proy., REF), pero cada celda es una lista
+        // desplegable A+ a E-. Se guarda la LETRA tal cual en los mismos campos (insumos/sumativa/
+        // refuerzo/proyecto/refuerzoProyecto) — no hay ningún cambio de estructura de datos. Las
+        // columnas de 70%/15% ya no se muestran (no tienen sentido como letra), pero el cálculo interno
+        // de la nota sigue usando exactamente esos mismos pesos (ver calcularTrimestre).
+        const THEAD_TRIMESTRE_CUALITATIVO = `
+            <thead>
+                <tr class="bg-emerald-900 text-white uppercase text-center divide-x divide-emerald-800">
+                    <th class="p-2 text-left w-60 text-xs">Estudiante</th>
+                    <th class="p-1 w-11">I1</th><th class="p-1 w-11">I2</th><th class="p-1 w-11">I3</th><th class="p-1 w-11">I4</th><th class="p-1 w-11">I5</th>
+                    <th class="p-1 w-11">I6</th><th class="p-1 w-11">I7</th><th class="p-1 w-11">I8</th><th class="p-1 w-11">I9</th><th class="p-1 w-11">I10</th>
+                    <th class="p-1 w-14 bg-emerald-800">Prom. Insumos</th>
+                    <th class="p-1 w-14 bg-emerald-800">Eval.</th>
+                    <th class="p-1 w-14 bg-amber-700">Ref.</th>
+                    <th class="p-1 w-14 bg-emerald-700">Ev/Ref</th>
+                    <th class="p-1 w-14 bg-indigo-800">Proy.</th>
+                    <th class="p-1 w-14 bg-amber-700">REF</th>
+                    <th class="p-1 w-14 bg-indigo-700">Proy/RefP</th>
+                    <th class="p-2 w-14 bg-slate-900 text-xs">Final</th>
+                    <th class="p-2 w-20 bg-slate-800 text-xs">Nivel</th>
+                </tr>
+            </thead>`;
+
+        function renderizarTablaTrimestreCualitativaElemental(t, tabla) {
+            const curso = db.cursos[db.cursoActivoIndex];
+            const tKey = `t${t}`;
+            const bloqueadoAdmin = esAdminActual();
+            const titulo = 'Solo el/la docente puede editar las calificaciones';
+            const leyenda = `<caption class="text-left text-[10px] text-slate-600 p-1.5 bg-emerald-50 border-b">
+                <b>Escala cualitativa (2do a 4to EGB):</b>
+                A+ = 10 · A- = 9 · B+ = 8 · B- = 7 <i>(Destreza o aprendizaje alcanzado)</i> &nbsp;|&nbsp;
+                C+ = 6 · C- = 5 <i>(en proceso de desarrollo)</i> &nbsp;|&nbsp;
+                D+ = 4 · D- = 3 · E+ = 2 · E- = 1 <i>(iniciado)</i>.
+                <span class="text-red-700 font-semibold">De E- a C+ el/la estudiante ingresa al Plan de Refuerzo Académico.</span>
+                Los promedios se calculan con estos equivalentes y se redondean a la letra más cercana.
+            </caption>`;
+            tabla.innerHTML = leyenda + THEAD_TRIMESTRE_CUALITATIVO + `<tbody id="tabla-t${t}-body" class="divide-y text-center"></tbody>`;
+            const tbody = document.getElementById(`tabla-t${t}-body`);
+            let filas = '';
+            curso.estudiantes.sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(est => {
+                const c = curso.calificaciones[est.id][tKey];
+                const calc = calcularTrimestre(c);
+                const celda = (campo, idx, claseFondo, claseTxt) => {
+                    const valor = idx !== null ? c.insumos[idx] : c[campo];
+                    const onchange = `actualizarNotaCeldaCualitativa('${est.id}', '${tKey}', '${campo}', ${idx}, this.value)`;
+                    return `<td class="p-0.5 ${claseFondo || ''}">${htmlSelectNotaLetra(valor, onchange, claseTxt || '', bloqueadoAdmin, titulo)}</td>`;
+                };
+                let insHTML = '';
+                for(let i=0; i<10; i++) insHTML += celda('insumos', i, '', 'focus:bg-emerald-50');
+                const tieneNota = calc.notaFinal !== '';
+                filas += `
+                <tr class="hover:bg-slate-50 border-b divide-x text-[11px]">
+                    <td class="p-1.5 text-left font-semibold uppercase truncate max-w-xs">${escaparHtml(est.nombre)} <span class="text-[9px] text-purple-800 font-bold">(${escaparHtml(est.nee)})</span></td>
+                    ${insHTML}
+                    <td id="pins-${tKey}-${est.id}" class="p-1 font-bold text-slate-600 bg-slate-50">${tieneNota ? numeroALetraCualitativa(calc.promedioInsumos) : '-'}</td>
+                    ${celda('sumativa', null, 'bg-emerald-50')}
+                    ${celda('refuerzo', null, 'bg-amber-50')}
+                    <td id="evalref-${tKey}-${est.id}" class="p-1 font-bold text-emerald-800 bg-emerald-50">${tieneNota ? numeroALetraCualitativa(calc.promedioEvalRef) : '-'}</td>
+                    ${celda('proyecto', null, 'bg-indigo-50')}
+                    ${celda('refuerzoProyecto', null, 'bg-amber-50')}
+                    <td id="proyrefp-${tKey}-${est.id}" class="p-1 font-bold text-indigo-800 bg-indigo-100">${tieneNota ? numeroALetraCualitativa(calc.proyectoVal) : '-'}</td>
+                    <td id="final-${tKey}-${est.id}" class="p-1 font-black text-white bg-slate-800 text-sm">${tieneNota ? numeroALetraCualitativa(calc.notaFinal) : '-'}</td>
+                    <td id="cual-${tKey}-${est.id}" class="p-1 font-bold text-slate-700 bg-slate-100 text-[9px] leading-tight">${tieneNota ? nivelDestrezaCualitativa(calc.notaFinal).corto : '-'}</td>
+                </tr>`;
+            });
+            tbody.innerHTML = filas;
+        }
+
+        // Guarda una nota cualitativa (letra A+ a E-, o vacío para borrarla) y refresca, sin volver a
+        // dibujar toda la tabla, las columnas calculadas de ese/esa estudiante.
+        function actualizarNotaCeldaCualitativa(estudianteId, tKey, tipo, idx, valor) {
+            if (esAdminActual()) { alert('El administrador puede ver las calificaciones, pero no editarlas.'); renderizarTablaTrimestre(parseInt(tKey.replace('t',''))); return; }
+            const curso = db.cursos[db.cursoActivoIndex];
+            if(valor !== '' && !esNotaLetraCualitativa(valor)) {
+                alert('Calificación inválida: elija una letra de A+ a E-.');
+                renderizarTablaTrimestre(parseInt(tKey.replace('t','')));
+                return;
+            }
+            if(idx !== null) curso.calificaciones[estudianteId][tKey].insumos[idx] = valor;
+            else curso.calificaciones[estudianteId][tKey][tipo] = valor;
+            salvar();
+            const calc = calcularTrimestre(curso.calificaciones[estudianteId][tKey]);
+            const tieneNota = calc.notaFinal !== '';
+            const poner = (prefijo, texto) => { const el = document.getElementById(`${prefijo}-${tKey}-${estudianteId}`); if(el) el.innerText = texto; };
+            poner('pins', tieneNota ? numeroALetraCualitativa(calc.promedioInsumos) : '-');
+            poner('evalref', tieneNota ? numeroALetraCualitativa(calc.promedioEvalRef) : '-');
+            poner('proyrefp', tieneNota ? numeroALetraCualitativa(calc.proyectoVal) : '-');
+            poner('final', tieneNota ? numeroALetraCualitativa(calc.notaFinal) : '-');
+            poner('cual', tieneNota ? nivelDestrezaCualitativa(calc.notaFinal).corto : '-');
         }
 
         // Cuadro de digitación para un curso cuya Asignatura Específica es OVP: reemplaza por completo
@@ -10235,14 +10531,22 @@ ${estilosHtml}
                                 diagnostico.push(registro);
                                 continue;
                             }
-                            const n = parseFloat(String(valorCelda).replace(',', '.'));
+                            // 2do-4to EGB (calificación cualitativa, 2026-10-10): el archivo puede traer la LETRA
+                            // (A+ a E-) o un número de 1 a 10 — en ambos casos se guarda la letra equivalente.
+                            const esCualImport = esCursoCualitativoElemental(curso);
+                            const letraImportada = esCualImport ? String(valorCelda).trim().toUpperCase() : '';
+                            const n = (esCualImport && esNotaLetraCualitativa(letraImportada))
+                                ? LETRA_A_NUMERO_CUALITATIVA[letraImportada]
+                                : parseFloat(String(valorCelda).replace(',', '.'));
                             if(isNaN(n) || n < 0 || n > 10) {
                                 registro.estado = 'valor_invalido';
-                                registro.detalle = `El valor "${valorCelda}" no es una nota válida entre 0 y 10.`;
+                                registro.detalle = esCualImport
+                                    ? `El valor "${valorCelda}" no es una calificación válida (use una letra de A+ a E-).`
+                                    : `El valor "${valorCelda}" no es una nota válida entre 0 y 10.`;
                                 diagnostico.push(registro);
                                 continue;
                             }
-                            const nRedondeado = Math.round(n * 100) / 100;
+                            const nRedondeado = esCualImport ? obtenerEscalaAlfabetica(n) : Math.round(n * 100) / 100;
 
                             if(!curso.calificaciones[est.id]) curso.calificaciones[est.id] = {};
                             if(!curso.calificaciones[est.id][tKey]) curso.calificaciones[est.id][tKey] = { insumos: Array(10).fill(''), sumativa: '', refuerzo: '', proyecto: '', refuerzoProyecto: '' };
@@ -10644,6 +10948,9 @@ ${estilosHtml}
             if (!tbody || !filaHeader || !selTrim) return;
 
             const periodo = selTrim.value;
+            // 2do-4to EGB (2026-10-10): las notas se muestran como letra A+ a E-.
+            const cualReg = esGradoCualitativoElemental(curso.label);
+            const fmtReg = (v) => cualReg ? numeroALetraCualitativa(v) : formatearNotaSegura(v);
             const nombresMaterias = curso.nombresAsignaturasNivel || [];
             // El slot de Ámbitos (Inicial/Preparatoria) se EXPANDE en una columna por cada Ámbito —
             // Inglés/ECA/Educación Física de Preparatoria, al tener un único ítem, quedan en 1 columna.
@@ -10743,26 +11050,27 @@ ${estilosHtml}
                     if (periodo === 'supletorio' || periodo === 'anual') {
                         const t1 = parseFloat(m.t1), t2 = parseFloat(m.t2), t3 = parseFloat(m.t3);
                         if (isNaN(t1) || isNaN(t2) || isNaN(t3)) return `<td class="p-1 text-slate-300 bg-slate-50">-</td>`;
-                        const prom = (t1 + t2 + t3) / 3;
+                        const promCrudo = (t1 + t2 + t3) / 3;
+                        const prom = cualReg ? Math.round(promCrudo) : promCrudo; // 2do-4to: letra más cercana
                         // Promedio anual menor a 4: el/la estudiante pierde el año directamente en esta
                         // asignatura y no tiene derecho a rendir supletorio en ella. Se muestra la nota
                         // del promedio anual junto con el texto "Reprobado Anual", tanto en la vista
                         // Anual como en la vista Supletorio (en esta última NUNCA debe verse "(pendiente)"
                         // para este caso, porque no hay examen supletorio que rendir).
-                        if (prom < 4) return `<td class="p-1 font-bold text-red-800 bg-red-50" title="Promedio anual">${formatearNotaSegura(prom)}<br><span class="text-[10px] font-black uppercase">Reprobado Anual</span></td>`;
-                        if (periodo === 'anual') return `<td class="p-1 font-bold" title="Promedio anual">${formatearNotaSegura(prom)} (${obtenerEscalaAlfabetica(prom)})</td>`;
-                        if (prom >= 7) return `<td class="p-1 font-bold text-emerald-700 bg-emerald-50">${formatearNotaSegura(prom)} (Aprobado)</td>`;
+                        if (prom < 4) return `<td class="p-1 font-bold text-red-800 bg-red-50" title="Promedio anual">${fmtReg(prom)}<br><span class="text-[10px] font-black uppercase">Reprobado Anual</span></td>`;
+                        if (periodo === 'anual') return `<td class="p-1 font-bold" title="Promedio anual">${cualReg ? fmtReg(prom) : `${formatearNotaSegura(prom)} (${obtenerEscalaAlfabetica(prom)})`}</td>`;
+                        if (prom >= 7) return `<td class="p-1 font-bold text-emerald-700 bg-emerald-50">${fmtReg(prom)} (Aprobado)</td>`;
                         // Promedio anual entre 4 y 7: sí tiene derecho a supletorio en esta asignatura.
                         const sup = m.supletorio;
                         if (sup !== '' && sup !== undefined && !isNaN(parseFloat(sup))) {
                             const supNum = parseFloat(sup);
-                            if (supNum >= 7) return `<td class="p-1 font-bold text-emerald-700 bg-emerald-50">7.00<br><span class="text-[10px] font-black uppercase">Promovido Supletorio</span></td>`;
-                            return `<td class="p-1 font-bold text-red-800 bg-red-50">${formatearNotaSegura(supNum)}<br><span class="text-[10px] font-black uppercase">Reprobado Supletorio</span></td>`;
+                            if (supNum >= 7) return `<td class="p-1 font-bold text-emerald-700 bg-emerald-50">${cualReg ? 'B-' : '7.00'}<br><span class="text-[10px] font-black uppercase">Promovido Supletorio</span></td>`;
+                            return `<td class="p-1 font-bold text-red-800 bg-red-50">${fmtReg(supNum)}<br><span class="text-[10px] font-black uppercase">Reprobado Supletorio</span></td>`;
                         }
                         return `<td class="p-1 bg-amber-50">(pendiente)</td>`;
                     }
                     const v = m[periodo];
-                    return `<td class="p-1">${(v !== '' && v !== undefined && !isNaN(parseFloat(v))) ? `${formatearNotaSegura(v)} (${obtenerEscalaAlfabetica(v)})` : '-'}</td>`;
+                    return `<td class="p-1">${(v !== '' && v !== undefined && !isNaN(parseFloat(v))) ? (cualReg ? fmtReg(v) : `${formatearNotaSegura(v)} (${obtenerEscalaAlfabetica(v)})`) : '-'}</td>`;
                 }).join('');
                 tbody.innerHTML += `
                 <tr class="hover:bg-slate-50 border-b divide-x text-xs">
@@ -11305,8 +11613,12 @@ ${estilosHtml}
                 return;
             }
 
-            let contadores = { DA: 0, A: 0, PA: 0, NA: 0, SinNota: 0 };
+            let contadores = { DA: 0, A: 0, PA: 0, NA: 0, SinNota: 0, ALC: 0, PRO: 0, INI: 0 }; // ALC/PRO/INI: 2do-4to EGB (cualitativo)
             let tablaHTML = '';
+            // 2do-4to EGB (2026-10-10): el acta muestra letras A+ a E- en vez de números. Los cálculos
+            // internos no cambian (siguen usando los equivalentes numéricos ya redondeados).
+            const esCualActa = esCursoCualitativoElemental(curso);
+            const letraActa = (v) => (v === '' || v === undefined || v === null) ? '' : numeroALetraCualitativa(v);
 
             if (periodoFiltro === 'anual') {
                 document.getElementById('print-tipo-reporte').innerText = "ACTA DE CALIFICACIONES " + etiquetaPeriodoActa(periodoFiltro);
@@ -11338,6 +11650,7 @@ ${estilosHtml}
                     
                     let conteo = [t1, t2, t3].filter(v => v !== '').length;
                     let promAnual = conteo === 3 ? ((parseFloat(t1) + parseFloat(t2) + parseFloat(t3)) / 3).toFixed(2) : '';
+                    if (esCualActa && promAnual !== '') promAnual = Math.round(parseFloat(promAnual)).toFixed(2); // letra más cercana
                     let supletorio = curso.supletorios[est.id] !== undefined ? curso.supletorios[est.id] : '';
                     let promFinal = promAnual;
                     let estado = '-';
@@ -11370,6 +11683,7 @@ ${estilosHtml}
                         }
                         let eq = obtenerEquivalenciaRGLOEI(promFinal);
                         if(contadores[eq.sigla] !== undefined) contadores[eq.sigla]++;
+                        if(esCualActa) { const r = Math.round(parseFloat(promFinal)); if(r >= 7) contadores.ALC++; else if(r >= 5) contadores.PRO++; else contadores.INI++; }
                     } else {
                         contadores.SinNota++;
                     }
@@ -11379,14 +11693,17 @@ ${estilosHtml}
                         <td class="p-2 font-bold text-slate-400 bg-slate-50">${idx+1}</td>
                         <td class="p-2 text-left font-bold uppercase text-slate-900">${est.nombre}</td>
                         <td class="p-2 font-medium text-purple-800">${est.nee}</td>
-                        <td class="p-2 font-mono">${t1 || '-'}</td>
-                        <td class="p-2 font-mono">${t2 || '-'}</td>
-                        <td class="p-2 font-mono">${t3 || '-'}</td>
-                        <td class="p-2 font-bold bg-slate-100 text-slate-700 font-mono">${promAnual || '-'}</td>
+                        <td class="p-2 font-mono">${(esCualActa ? letraActa(t1) : t1) || '-'}</td>
+                        <td class="p-2 font-mono">${(esCualActa ? letraActa(t2) : t2) || '-'}</td>
+                        <td class="p-2 font-mono">${(esCualActa ? letraActa(t3) : t3) || '-'}</td>
+                        <td class="p-2 font-bold bg-slate-100 text-slate-700 font-mono">${(esCualActa ? letraActa(promAnual) : promAnual) || '-'}</td>
                         <td class="p-0.5 bg-amber-50">
-                            <input type="number" step="0.01" value="${supletorio}" onchange="actualizarSupletorioAnual('${est.id}', this.value)" class="w-full text-center border-0 bg-transparent font-bold text-xs ${esAdminActual() ? 'bg-slate-100 cursor-not-allowed' : ''}" placeholder="${(promAnual!==''&&parseFloat(promAnual)<7&&!pierdeAñoAutomatico)?'0.00':(pierdeAñoAutomatico?'No aplica':'-')}" ${(promAnual!==''&&(parseFloat(promAnual)>=7||pierdeAñoAutomatico))||esAdminActual()?'disabled':''} title="${esAdminActual() ? 'Solo el/la docente puede editar las calificaciones' : (pierdeAñoAutomatico?'Promedio anual menor a 4: pierde el año automáticamente, no rinde supletorio.':'')}">
+                            ${esCualActa
+                                ? htmlSelectNotaLetra(supletorio, `actualizarSupletorioAnual('${est.id}', this.value)`, '', (promAnual!==''&&(parseFloat(promAnual)>=7||pierdeAñoAutomatico))||esAdminActual(), esAdminActual() ? 'Solo el/la docente puede editar las calificaciones' : (pierdeAñoAutomatico ? 'Promedio anual menor a 4: pierde el año automáticamente, no rinde supletorio.' : ''))
+                                : `<input type="number" step="0.01" value="${supletorio}" onchange="actualizarSupletorioAnual('${est.id}', this.value)" class="w-full text-center border-0 bg-transparent font-bold text-xs ${esAdminActual() ? 'bg-slate-100 cursor-not-allowed' : ''}" placeholder="${(promAnual!==''&&parseFloat(promAnual)<7&&!pierdeAñoAutomatico)?'0.00':(pierdeAñoAutomatico?'No aplica':'-')}" ${(promAnual!==''&&(parseFloat(promAnual)>=7||pierdeAñoAutomatico))||esAdminActual()?'disabled':''} title="${esAdminActual() ? 'Solo el/la docente puede editar las calificaciones' : (pierdeAñoAutomatico?'Promedio anual menor a 4: pierde el año automáticamente, no rinde supletorio.':'')}">
+                        `}
                         </td>
-                        <td class="p-2 font-black text-white bg-emerald-900 font-mono">${promFinal || '-'}</td>
+                        <td class="p-2 font-black text-white bg-emerald-900 font-mono">${(esCualActa ? letraActa(promFinal) : promFinal) || '-'}</td>
                         <td class="p-2 text-xxs ${claseEstado}">${estado}</td>
                     </tr>`;
                 });
@@ -11441,6 +11758,7 @@ ${estilosHtml}
                     if (notaF !== '') {
                         let eq = obtenerEquivalenciaRGLOEI(notaF);
                         if(contadores[eq.sigla] !== undefined) contadores[eq.sigla]++;
+                        if(esCualActa) { const r = Math.round(parseFloat(notaF)); if(r >= 7) contadores.ALC++; else if(r >= 5) contadores.PRO++; else contadores.INI++; }
                         
                         if (parseFloat(notaF) < 7.00) {
                             requiereRefuerzo = '⚠️ APREMIANTE';
@@ -11458,14 +11776,14 @@ ${estilosHtml}
                         <td class="p-2 font-bold text-slate-400 bg-slate-50">${idx+1}</td>
                         <td class="p-2 text-left font-bold uppercase text-slate-900">${est.nombre}</td>
                         <td class="p-2 font-medium text-purple-800">${est.nee}</td>
-                        <td class="p-2 font-mono text-slate-600">${calc.promedioInsumos}</td>
-                        <td class="p-2 font-mono bg-emerald-50 text-emerald-900">${calc.equivIns}</td>
-                        <td class="p-2 font-mono text-slate-600">${calc.promedioEvalRef}</td>
-                        <td class="p-2 font-mono bg-emerald-50 text-emerald-900">${calc.equivEvalRef}</td>
-                        <td class="p-2 font-mono text-slate-600">${calc.proyectoVal}</td>
-                        <td class="p-2 font-mono bg-indigo-50 text-indigo-900">${calc.equivProy}</td>
-                        <td class="p-2 font-black text-white bg-slate-900 font-mono text-sm">${notaF || '-'}</td>
-                        <td class="p-2 font-black text-slate-800 bg-slate-100">${notaF ? obtenerEquivalenciaRGLOEI(notaF).sigla : '-'}</td>
+                        <td class="p-2 font-mono text-slate-600">${esCualActa ? (notaF ? letraActa(calc.promedioInsumos) : '-') : calc.promedioInsumos}</td>
+                        <td class="p-2 font-mono bg-emerald-50 text-emerald-900">${esCualActa ? '—' : calc.equivIns}</td>
+                        <td class="p-2 font-mono text-slate-600">${esCualActa ? (notaF ? letraActa(calc.promedioEvalRef) : '-') : calc.promedioEvalRef}</td>
+                        <td class="p-2 font-mono bg-emerald-50 text-emerald-900">${esCualActa ? '—' : calc.equivEvalRef}</td>
+                        <td class="p-2 font-mono text-slate-600">${esCualActa ? (notaF ? letraActa(calc.proyectoVal) : '-') : calc.proyectoVal}</td>
+                        <td class="p-2 font-mono bg-indigo-50 text-indigo-900">${esCualActa ? '—' : calc.equivProy}</td>
+                        <td class="p-2 font-black text-white bg-slate-900 font-mono text-sm">${(esCualActa ? letraActa(notaF) : notaF) || '-'}</td>
+                        <td class="p-2 font-black text-slate-800 bg-slate-100">${notaF ? (esCualActa ? nivelDestrezaCualitativa(notaF).corto : obtenerEquivalenciaRGLOEI(notaF).sigla) : '-'}</td>
                         <td class="p-2 text-xxs ${claseRefuerzo}">${requiereRefuerzo}</td>
                     </tr>`;
                 });
@@ -11473,7 +11791,7 @@ ${estilosHtml}
             }
 
             contenedorTabla.innerHTML = tablaHTML;
-            renderizarBloqueEstadisticoYGrafico(contadores);
+            renderizarBloqueEstadisticoYGrafico(contadores, esCualActa);
         }
 
         // Reporte "Informes y Actas" para un curso cuya Asignatura Específica es OVP: en vez del cuadro
@@ -11835,6 +12153,12 @@ ${estilosHtml}
                 renderizarActaAnualYEstadisticas();
                 return;
             }
+            // 2do-4to EGB: el supletorio se elige como letra (A+ a E-) pero se guarda su equivalente
+            // numérico (10 a 1), igual que el resto del sistema ya espera en curso.supletorios.
+            if(valor !== '' && esCursoCualitativoElemental(curso)) {
+                if(!esNotaLetraCualitativa(valor)) return;
+                valor = LETRA_A_NUMERO_CUALITATIVA[valor.trim()];
+            }
             if(valor !== '') {
                 let n = parseFloat(valor);
                 if(n<0||n>10||isNaN(n)) return;
@@ -11845,7 +12169,54 @@ ${estilosHtml}
             renderizarActaAnualYEstadisticas();
         }
 
-        function renderizarBloqueEstadisticoYGrafico(c) {
+        // 2do-4to EGB (2026-10-11): "Distribución de Logros del Periodo" y su diagrama de barras con los 3
+        // niveles de la escala cualitativa: A+ a B- (alcanzado), C+ a C- (en proceso de desarrollo) y
+        // D+ a E- (iniciado) — en lugar de DA/A/PA/NA por rangos numéricos.
+        function renderizarBloqueEstadisticoCualitativoElemental(c) {
+            const contenedor = document.getElementById('bloque-estadistico-logros');
+            if(!contenedor) return;
+            const total = c.ALC + c.PRO + c.INI;
+            const pct = (v) => total > 0 ? ((v / total) * 100).toFixed(1) : 0;
+            contenedor.innerHTML = `
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                <h3 class="text-xs font-black text-slate-700 uppercase tracking-wider border-b pb-1 text-center">📈 Distribución de Logros del Periodo Seleccionado</h3>
+                <div class="grid grid-cols-1 gap-2 text-xs">
+                    <div class="p-2 bg-emerald-50 rounded border border-emerald-200">
+                        <span class="font-bold text-emerald-800">Destreza o aprendizaje alcanzado (A+ a B-):</span> <b class="text-sm text-emerald-900">${c.ALC}</b> <span class="text-slate-400 text-[10px]">(${pct(c.ALC)}%)</span>
+                    </div>
+                    <div class="p-2 bg-amber-50 rounded border border-amber-200">
+                        <span class="font-bold text-amber-800">Destreza o aprendizaje en proceso de desarrollo (C+ a C-):</span> <b class="text-sm text-amber-900">${c.PRO}</b> <span class="text-slate-400 text-[10px]">(${pct(c.PRO)}%)</span>
+                    </div>
+                    <div class="p-2 bg-red-50 rounded border border-red-200">
+                        <span class="font-bold text-red-800">Destreza o aprendizaje iniciado (D+ a E-):</span> <b class="text-sm text-red-900">${c.INI}</b> <span class="text-slate-400 text-[10px]">(${pct(c.INI)}%)</span>
+                    </div>
+                </div>
+                <p class="text-[10px] text-slate-400 text-center">Total evaluados en esta vista: ${total} alumno(s).</p>
+            </div>`;
+            const ctx = document.getElementById('canvas-grafico-barras');
+            if(!ctx) return;
+            if(chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Alcanzado (A+ a B-)', 'En proceso (C+ a C-)', 'Iniciado (D+ a E-)'],
+                    datasets: [{
+                        label: 'Número de Alumnos',
+                        data: [c.ALC, c.PRO, c.INI],
+                        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                }
+            });
+        }
+
+        function renderizarBloqueEstadisticoYGrafico(c, esCualitativoElemental) {
             const contenedor = document.getElementById('bloque-estadistico-logros');
             if(!contenedor) return;
             // Restaura la fila estadística "de una sola columna" (por si el curso anterior mostrado
@@ -11854,6 +12225,7 @@ ${estilosHtml}
             const filaCualNorm = document.getElementById('fila-estadistico-cualitativo');
             if (filaNumNorm) filaNumNorm.classList.remove('hidden');
             if (filaCualNorm) { filaCualNorm.classList.add('hidden'); filaCualNorm.innerHTML = ''; }
+            if (esCualitativoElemental) { renderizarBloqueEstadisticoCualitativoElemental(c); return; }
             
             let totalValidos = c.DA + c.A + c.PA + c.NA;
             let pDA = totalValidos > 0 ? ((c.DA/totalValidos)*100).toFixed(1) : 0;
@@ -11931,6 +12303,7 @@ ${estilosHtml}
             let conteo = [t1, t2, t3].filter(v => v !== '').length;
             if(conteo !== 3) return '';
             let promAnual = (parseFloat(t1) + parseFloat(t2) + parseFloat(t3)) / 3;
+            if(esCursoCualitativoElemental(curso)) promAnual = Math.round(promAnual); // 2do-4to EGB: letra más cercana
 
             if(periodo === 'anual') return promAnual.toFixed(2);
 
@@ -11945,7 +12318,7 @@ ${estilosHtml}
         // Versión genérica reutilizable: recibe directamente las 3 notas trimestrales (numéricas o '') y el supletorio.
         // periodo: 't1' | 't2' | 't3' | 'anual'. Usada por el Boletín del Estudiante para tanto la asignatura
         // propia del docente como para cada una de las 12 asignaturas externas del Registro Interdisciplinar.
-        function obtenerNotaDeSetTrimestral(n1, n2, n3, supletorio, periodo) {
+        function obtenerNotaDeSetTrimestral(n1, n2, n3, supletorio, periodo, redondearALetra) {
             if(periodo === 't1') return n1 === '' || n1 === undefined ? '' : parseFloat(n1).toFixed(2);
             if(periodo === 't2') return n2 === '' || n2 === undefined ? '' : parseFloat(n2).toFixed(2);
             if(periodo === 't3') return n3 === '' || n3 === undefined ? '' : parseFloat(n3).toFixed(2);
@@ -11954,6 +12327,7 @@ ${estilosHtml}
             let conteo = [n1, n2, n3].filter(v => v !== '' && v !== undefined).length;
             if(conteo !== 3) return '';
             let prom = (parseFloat(n1) + parseFloat(n2) + parseFloat(n3)) / 3;
+            if(redondearALetra) prom = Math.round(prom); // 2do-4to EGB: el promedio anual es la letra más cercana
             if(prom < 7.00 && supletorio !== '' && supletorio !== undefined) {
                 let sNum = parseFloat(supletorio);
                 return (sNum >= 7.00 ? 7.00 : prom).toFixed(2);
@@ -12058,7 +12432,11 @@ ${estilosHtml}
         // (nota < 7) y aviso de no promovidos (promedio anual/supletorio < 4). Extraída tal cual estaba
         // antes de renderizarInformeAsignatura() para poder alternar con la variante cualitativa.
         function renderizarResultadosNumericosInformeAsignatura(curso, periodo) {
-            let contadores = { DA: 0, A: 0, PA: 0, NA: 0 };
+            let contadores = { DA: 0, A: 0, PA: 0, NA: 0, ALC: 0, PRO: 0, INI: 0 };
+            // 2do-4to EGB (2026-10-11): escala CUALITATIVA — 3 niveles (A+ a B- / C+ a C- / D+ a E-), promedio
+            // del curso como letra y "Resultados Globales" comparados contra la media en letras.
+            const esCualIA = esCursoCualitativoElemental(curso);
+            const fmtNp = (v) => esCualIA ? numeroALetraCualitativa(v) : parseFloat(v).toFixed(2);
             let sumaNotas = 0, totalConNota = 0;
             let notasValidas = []; // [{nombre, nota}], para el análisis de promedios (vs. la media del curso)
             let listaDificultades = [];
@@ -12075,9 +12453,10 @@ ${estilosHtml}
                 notasValidas.push({ nombre: est.nombre, nota: n });
                 const eq = obtenerEquivalenciaRGLOEI(n);
                 if(contadores[eq.sigla] !== undefined) contadores[eq.sigla]++;
+                if(esCualIA) { const r = Math.round(n); if(r >= 7) contadores.ALC++; else if(r >= 5) contadores.PRO++; else contadores.INI++; }
                 if(n < 7.00) listaDificultades.push({ nombre: est.nombre, nota: n });
                 if(periodo === 'anual' && n < 4.00) {
-                    listaNoPromovidos.push({ nombre: est.nombre, nota: n.toFixed(2), motivo: 'anual' });
+                    listaNoPromovidos.push({ nombre: est.nombre, nota: fmtNp(n), motivo: 'anual' });
                 }
                 if(periodo === 'anual_supletorio') {
                     // "n" (de obtenerNotaPorPeriodo) ya resuelve el caso "anual < 4" y el caso
@@ -12089,13 +12468,14 @@ ${estilosHtml}
                     const t3D = calcularTrimestre(curso.calificaciones[est.id].t3).notaFinal;
                     const conteoD = [t1D, t2D, t3D].filter(v => v !== '').length;
                     if(conteoD === 3) {
-                        const promAnualD = (parseFloat(t1D) + parseFloat(t2D) + parseFloat(t3D)) / 3;
+                        let promAnualD = (parseFloat(t1D) + parseFloat(t2D) + parseFloat(t3D)) / 3;
+                        if(esCualIA) promAnualD = Math.round(promAnualD); // letra más cercana
                         if(promAnualD < 4.00) {
-                            listaNoPromovidos.push({ nombre: est.nombre, nota: promAnualD.toFixed(2), motivo: 'anual' });
+                            listaNoPromovidos.push({ nombre: est.nombre, nota: fmtNp(promAnualD), motivo: 'anual' });
                         } else if(promAnualD < 7.00) {
                             const supD = curso.supletorios[est.id];
                             if(supD !== '' && supD !== undefined && parseFloat(supD) < 7.00) {
-                                listaNoPromovidos.push({ nombre: est.nombre, nota: parseFloat(supD).toFixed(2), motivo: 'supletorio' });
+                                listaNoPromovidos.push({ nombre: est.nombre, nota: fmtNp(supD), motivo: 'supletorio' });
                             }
                         }
                     }
@@ -12103,44 +12483,77 @@ ${estilosHtml}
             });
 
             const promCurso = totalConNota > 0 ? (sumaNotas/totalConNota) : 0;
-            document.getElementById('ia-promedio-curso').innerText = totalConNota > 0 ? promCurso.toFixed(2) : '#¡DIV/0!';
+            document.getElementById('ia-promedio-curso').innerText = totalConNota > 0 ? (esCualIA ? numeroALetraCualitativa(promCurso) : promCurso.toFixed(2)) : '#¡DIV/0!';
 
             const elRango = document.getElementById('ia-rango-promedio');
             if(elRango) {
                 if(totalConNota > 0) {
-                    const eqCurso = obtenerEquivalenciaRGLOEI(promCurso);
-                    elRango.innerText = `${eqCurso.desc} (${eqCurso.sigla})`;
+                    if (esCualIA) {
+                        elRango.innerText = nivelDestrezaCualitativa(promCurso).largo;
+                    } else {
+                        const eqCurso = obtenerEquivalenciaRGLOEI(promCurso);
+                        elRango.innerText = `${eqCurso.desc} (${eqCurso.sigla})`;
+                    }
                 } else {
                     elRango.innerText = '-';
                 }
             }
 
             let nSuperior = 0, nInferior = 0;
-            notasValidas.forEach(item => { if(item.nota >= promCurso) nSuperior++; else nInferior++; });
+            // 2do-4to EGB: la comparación con la media se hace entre LETRAS (equivalentes redondeados).
+            const mediaCualRedondeada = Math.round(promCurso);
+            notasValidas.forEach(item => {
+                const supera = esCualIA ? (Math.round(item.nota) >= mediaCualRedondeada) : (item.nota >= promCurso);
+                if(supera) nSuperior++; else nInferior++;
+            });
+            const letraMedia = (esCualIA && totalConNota > 0) ? numeroALetraCualitativa(promCurso) : '';
 
             const pct = (v) => totalConNota > 0 ? ((v/totalConNota)*100).toFixed(1) + '%' : '#¡DIV/0!';
-            document.getElementById('ia-n-da').innerText = contadores.DA;
-            document.getElementById('ia-p-da').innerText = pct(contadores.DA);
-            document.getElementById('ia-n-a').innerText = contadores.A;
-            document.getElementById('ia-p-a').innerText = pct(contadores.A);
-            document.getElementById('ia-n-pa').innerText = contadores.PA;
-            document.getElementById('ia-p-pa').innerText = pct(contadores.PA);
-            document.getElementById('ia-n-na').innerText = contadores.NA;
-            document.getElementById('ia-p-na').innerText = pct(contadores.NA);
+            // Escala: cuantitativa (DA/A/PA/NA) o cualitativa de 3 niveles (2do-4to EGB).
+            const setTxt = (id, txt) => { const el = document.getElementById(id); if(el) el.innerText = txt; };
+            const filaNA = document.getElementById('ia-fila-na');
+            if (esCualIA) {
+                setTxt('ia-escala-titulo', 'Escala Cualitativa');
+                setTxt('ia-lbl-da', 'Destreza o aprendizaje alcanzado (A+ a B-)');
+                setTxt('ia-lbl-a', 'Destreza o aprendizaje en proceso de desarrollo (C+ a C-)');
+                setTxt('ia-lbl-pa', 'Destreza o aprendizaje iniciado (D+ a E-)');
+                if (filaNA) filaNA.classList.add('hidden');
+                setTxt('ia-n-da', contadores.ALC); setTxt('ia-p-da', pct(contadores.ALC));
+                setTxt('ia-n-a', contadores.PRO);  setTxt('ia-p-a', pct(contadores.PRO));
+                setTxt('ia-n-pa', contadores.INI); setTxt('ia-p-pa', pct(contadores.INI));
+                setTxt('ia-n-na', 0); setTxt('ia-p-na', '');
+            } else {
+                setTxt('ia-escala-titulo', 'Escala Cuantitativa');
+                setTxt('ia-lbl-da', 'Destreza o aprendizaje alcanzado (DA)');
+                setTxt('ia-lbl-a', 'Alcanza los aprendizajes (A)');
+                setTxt('ia-lbl-pa', 'Está próximo a alcanzar (PA)');
+                if (filaNA) filaNA.classList.remove('hidden');
+                setTxt('ia-n-da', contadores.DA); setTxt('ia-p-da', pct(contadores.DA));
+                setTxt('ia-n-a', contadores.A);   setTxt('ia-p-a', pct(contadores.A));
+                setTxt('ia-n-pa', contadores.PA); setTxt('ia-p-pa', pct(contadores.PA));
+                setTxt('ia-n-na', contadores.NA); setTxt('ia-p-na', pct(contadores.NA));
+            }
+            // Resultados Globales: en 2do-4to EGB la media X̄ se expresa como letra.
+            const lblSup = document.getElementById('ia-lbl-superior');
+            const lblInf = document.getElementById('ia-lbl-inferior');
+            if (lblSup) lblSup.innerHTML = 'Igual o Superior a <span style="text-decoration: overline;">X</span>' + (esCualIA && letraMedia ? ` (${letraMedia})` : '');
+            if (lblInf) lblInf.innerHTML = 'Inferiores a <span style="text-decoration: overline;">X</span>' + (esCualIA && letraMedia ? ` (${letraMedia})` : '');
 
             document.getElementById('ia-n-superior').innerText = nSuperior;
             document.getElementById('ia-p-superior').innerText = pct(nSuperior);
             document.getElementById('ia-n-inferior').innerText = nInferior;
             document.getElementById('ia-p-inferior').innerText = pct(nInferior);
 
-            document.getElementById('ia-titulo-dificultades').innerText = '3. Análisis de Dificultades de Aprendizaje (Nota < 7)';
+            document.getElementById('ia-titulo-dificultades').innerText = esCursoCualitativoElemental(curso)
+                ? '3. Análisis de Dificultades de Aprendizaje (calificación de C+ a E-)'
+                : '3. Análisis de Dificultades de Aprendizaje (Nota < 7)';
             const tbodyDif = document.getElementById('ia-tabla-dificultades');
             tbodyDif.innerHTML = '';
             if(listaDificultades.length === 0) {
                 tbodyDif.innerHTML = `<tr><td colspan="3" class="p-2 text-slate-400 italic">Sin estudiantes en esta condición.</td></tr>`;
             } else {
                 listaDificultades.forEach((item, idx) => {
-                    tbodyDif.innerHTML += `<tr class="divide-x divide-slate-300"><td class="p-1 font-bold text-slate-400 w-8">${idx+1}</td><td class="p-1 text-left">${item.nombre}</td><td class="p-1 font-bold text-red-700">${item.nota.toFixed(2)}</td></tr>`;
+                    tbodyDif.innerHTML += `<tr class="divide-x divide-slate-300"><td class="p-1 font-bold text-slate-400 w-8">${idx+1}</td><td class="p-1 text-left">${item.nombre}</td><td class="p-1 font-bold text-red-700">${esCursoCualitativoElemental(curso) ? numeroALetraCualitativa(item.nota) : item.nota.toFixed(2)}</td></tr>`;
                 });
             }
 
@@ -12152,7 +12565,7 @@ ${estilosHtml}
                 tbodyDest.innerHTML = `<tr><td colspan="3" class="p-2 text-slate-400 italic">Sin estudiantes con NEE en este curso.</td></tr>`;
             } else {
                 listaNEE.forEach((item, idx) => {
-                    const notaTxt = (item.nota !== '' && item.nota !== undefined) ? parseFloat(item.nota).toFixed(2) : '-';
+                    const notaTxt = (item.nota !== '' && item.nota !== undefined) ? (esCualIA ? numeroALetraCualitativa(item.nota) : parseFloat(item.nota).toFixed(2)) : '-';
                     tbodyDest.innerHTML += `<tr class="divide-x divide-slate-300"><td class="p-1 font-bold text-slate-400 w-8">${idx+1}</td><td class="p-1 text-left">${item.nombre}</td><td class="p-1 font-bold">${notaTxt}</td></tr>`;
                 });
             }
@@ -12162,15 +12575,15 @@ ${estilosHtml}
             if(listaNoPromovidos.length > 0) {
                 bloqueNoProm.classList.remove('hidden');
                 listaNoPromEl.innerHTML = listaNoPromovidos.map(np => np.motivo === 'supletorio'
-                    ? `<li>• <strong>${np.nombre}</strong> no es promovido/a: rindió el examen supletorio de <strong>${curso.asignatura || 'esta asignatura'}</strong> y obtuvo <strong>${np.nota}</strong> (inferior a 7), por lo que pierde el año.</li>`
-                    : `<li>• <strong>${np.nombre}</strong> no es promovido/a: en el promedio anual obtuvo <strong>${np.nota}</strong> (inferior a 4) en la asignatura de <strong>${curso.asignatura || 'esta asignatura'}</strong>, por lo que no puede presentarse al examen supletorio en ninguna materia.</li>`
+                    ? `<li>• <strong>${np.nombre}</strong> no es promovido/a: rindió el examen supletorio de <strong>${curso.asignatura || 'esta asignatura'}</strong> y obtuvo <strong>${np.nota}</strong> (inferior a ${esCualIA ? 'B-' : '7'}), por lo que pierde el año.</li>`
+                    : `<li>• <strong>${np.nombre}</strong> no es promovido/a: en el promedio anual obtuvo <strong>${np.nota}</strong> (inferior a ${esCualIA ? 'D+' : '4'}) en la asignatura de <strong>${curso.asignatura || 'esta asignatura'}</strong>, por lo que no puede presentarse al examen supletorio en ninguna materia.</li>`
                 ).join('');
             } else {
                 bloqueNoProm.classList.add('hidden');
                 listaNoPromEl.innerHTML = '';
             }
 
-            renderizarGraficosInformeAsignatura(contadores, nSuperior, nInferior, listaNEE);
+            renderizarGraficosInformeAsignatura(contadores, nSuperior, nInferior, listaNEE, esCualIA, letraMedia);
         }
 
         // Sección "2. Resultados de Aprendizaje" (y 3-4) para Ámbitos de Desarrollo/Aprendizaje
@@ -12290,14 +12703,14 @@ ${estilosHtml}
             }
         }
 
-        function renderizarGraficosInformeAsignatura(contadores, nSuperior, nInferior, listaNEE) {
+        function renderizarGraficosInformeAsignatura(contadores, nSuperior, nInferior, listaNEE, esCualIA, letraMedia) {
             const ctxGlobales = document.getElementById('ia-canvas-globales');
             if(ctxGlobales) {
                 if(chartInformeGlobales) chartInformeGlobales.destroy();
                 chartInformeGlobales = new Chart(ctxGlobales, {
                     type: 'bar',
                     data: {
-                        labels: ['Igual o Sup. a la Media', 'Inferiores a la Media'],
+                        labels: esCualIA ? [`Igual o Sup. a la media${letraMedia ? ' (' + letraMedia + ')' : ''}`, `Inferiores a la media${letraMedia ? ' (' + letraMedia + ')' : ''}`] : ['Igual o Sup. a la Media', 'Inferiores a la Media'],
                         datasets: [{ data: [nSuperior, nInferior], backgroundColor: ['#3b82f6', '#f59e0b'], borderWidth: 1 }]
                     },
                     options: {
@@ -12332,7 +12745,7 @@ ${estilosHtml}
                             legend: { display: false }
                         },
                         scales: {
-                            y: { beginAtZero: true, max: 10, ticks: { stepSize: 2, font: { size: 8 }, callback: (v) => v.toFixed(2) } },
+                            y: { beginAtZero: true, max: 10, ticks: { stepSize: 2, font: { size: 8 }, callback: (v) => esCualIA ? (v >= 1 ? numeroALetraCualitativa(v) : '') : v.toFixed(2) } },
                             x: { ticks: { font: { size: 8 } } }
                         }
                     }
@@ -12528,11 +12941,16 @@ ${estilosHtml}
             const nombresExternas = db.configGeneral.nombresAsignaturasExternas || [];
             const esAnual = periodo === 'anual';
             let filasAsignaturas = [];
+            // 2do-4to EGB (2026-10-10): calificación cualitativa. Los promedios (anual y general) se
+            // redondean a la letra más cercana (1 a 10), igual que las notas trimestrales; el boletín los
+            // muestra como letra (ver renderizarBoletinEstudiante/generarHtmlBoletinCompacto).
+            const esCualitativoElemental = esGradoCualitativoElemental(curso.label);
+            const redondearSiCualitativo = (txt) => (esCualitativoElemental && txt !== '' && !isNaN(txt)) ? Math.round(parseFloat(txt)).toFixed(2) : txt;
 
             function promedioSimple(n1, n2, n3) {
                 let conteo = [n1, n2, n3].filter(v => v !== '' && v !== undefined).length;
                 if(conteo !== 3) return '';
-                return ((parseFloat(n1) + parseFloat(n2) + parseFloat(n3)) / 3).toFixed(2);
+                return redondearSiCualitativo(((parseFloat(n1) + parseFloat(n2) + parseFloat(n3)) / 3).toFixed(2));
             }
 
             // ── NUEVO (Básica Superior / Bachillerato, modelo "docente por asignatura"): no hay
@@ -12609,7 +13027,7 @@ ${estilosHtml}
                     if (esAnual) {
                         filasAsignaturas.push({ nombre: nombreMat, t1: m.t1, t2: m.t2, t3: m.t3, nota: promedioSimple(m.t1, m.t2, m.t3) });
                     } else {
-                        const nota = obtenerNotaDeSetTrimestral(m.t1, m.t2, m.t3, m.supletorio, periodo);
+                        const nota = obtenerNotaDeSetTrimestral(m.t1, m.t2, m.t3, m.supletorio, periodo, esCualitativoElemental);
                         const fila = { nombre: nombreMat, nota };
                         if (periodo === 'supletorio') {
                             const promBase = promedioSimple(m.t1, m.t2, m.t3);
@@ -12625,7 +13043,7 @@ ${estilosHtml}
                 let promedioGeneralNuevo = notasValidasNuevo.length > 0
                     ? (notasValidasNuevo.reduce((acc, n) => acc + parseFloat(n), 0) / notasValidasNuevo.length).toFixed(2)
                     : '';
-                return { filasAsignaturas, promedioGeneral: promedioGeneralNuevo, esAnual };
+                return { filasAsignaturas, promedioGeneral: redondearSiCualitativo(promedioGeneralNuevo), esAnual, esCualitativoElemental };
             }
 
             // ── Las 5 asignaturas fijas del/de la docente de acompañamiento ──────────────────────────
@@ -12646,7 +13064,7 @@ ${estilosHtml}
                     if (esAnual) {
                         filasAsignaturas.push({ nombre: nombreAsig, t1, t2, t3, nota: promedioSimple(t1, t2, t3) });
                     } else {
-                        const nota = obtenerNotaDeSetTrimestral(t1, t2, t3, (cursoAsig.supletorios || {})[estId], periodo);
+                        const nota = obtenerNotaDeSetTrimestral(t1, t2, t3, (cursoAsig.supletorios || {})[estId], periodo, esCualitativoElemental);
                         const fila = { nombre: nombreAsig, nota };
                         // "necesitoSupletorio": el promedio anual de ESTA asignatura (antes de aplicar el
                         // supletorio) fue menor a 7, es decir, este estudiante debía rendir supletorio
@@ -12672,7 +13090,7 @@ ${estilosHtml}
                 if(esAnual) {
                     filasAsignaturas.push({ nombre: curso.asignatura || 'Asignatura del Docente', t1: t1Propia, t2: t2Propia, t3: t3Propia, nota: promedioSimple(t1Propia, t2Propia, t3Propia) });
                 } else {
-                    let notaPropia = obtenerNotaDeSetTrimestral(t1Propia, t2Propia, t3Propia, curso.supletorios[estId], periodo);
+                    let notaPropia = obtenerNotaDeSetTrimestral(t1Propia, t2Propia, t3Propia, curso.supletorios[estId], periodo, esCualitativoElemental);
                     const filaPropia = { nombre: curso.asignatura || 'Asignatura del Docente', nota: notaPropia };
                     if(periodo === 'supletorio') {
                         const promBase = promedioSimple(t1Propia, t2Propia, t3Propia);
@@ -12697,7 +13115,7 @@ ${estilosHtml}
                 if(esAnual) {
                     filasAsignaturas.push({ nombre: nombreAsig, t1: om.t1, t2: om.t2, t3: om.t3, nota: promedioSimple(om.t1, om.t2, om.t3) });
                 } else {
-                    const notaAsig = obtenerNotaDeSetTrimestral(om.t1, om.t2, om.t3, om.supletorio, periodo);
+                    const notaAsig = obtenerNotaDeSetTrimestral(om.t1, om.t2, om.t3, om.supletorio, periodo, esCualitativoElemental);
                     const filaAsig = { nombre: nombreAsig, nota: notaAsig };
                     if(periodo === 'supletorio') {
                         const promBaseAsig = promedioSimple(om.t1, om.t2, om.t3);
@@ -12735,7 +13153,7 @@ ${estilosHtml}
                 ? (notasValidas.reduce((acc, n) => acc + parseFloat(n), 0) / notasValidas.length).toFixed(2)
                 : '';
 
-            return { filasAsignaturas, promedioGeneral, esAnual };
+            return { filasAsignaturas, promedioGeneral: redondearSiCualitativo(promedioGeneral), esAnual, esCualitativoElemental };
         }
 
         function renderizarBoletinEstudiante(estId) {
@@ -12758,7 +13176,12 @@ ${estilosHtml}
             };
 
             // --- Bloque 1: Resumen de todas las asignaturas (propia + 12 externas) para el periodo elegido ---
-            const { filasAsignaturas, promedioGeneral, esAnual } = calcularDatosAsignaturasBoletin(curso, estId, periodo);
+            const { filasAsignaturas, promedioGeneral, esAnual, esCualitativoElemental } = calcularDatosAsignaturasBoletin(curso, estId, periodo);
+            // 2do-4to EGB (2026-10-10): todo el boletín se muestra en letras A+ a E-, con el nivel de logro
+            // (Alcanzado / En proceso / Iniciado) y el equivalente /10 en lugar de la equivalencia RGLOEI.
+            const L = (v) => (v === '' || v === undefined || v === null || isNaN(v)) ? '-' : numeroALetraCualitativa(v);
+            const nivelCorto = (v) => (v === '' || v === undefined || v === null || isNaN(v)) ? '-' : nivelDestrezaCualitativa(v).corto;
+            const equivNum = (v) => (v === '' || v === undefined || v === null || isNaN(v)) ? '-' : String(Math.max(1, Math.min(10, Math.round(parseFloat(v)))));
             // 3ro BGC (solo ese año): el Boletín NO debe mostrar la fila de Promedio General.
             const ocultarPromedioGeneral = curso.label === '3ro BGC';
 
@@ -12775,6 +13198,20 @@ ${estilosHtml}
                             <td class="p-1.5 font-bold">${f.t3}</td>
                             <td class="p-1.5 font-bold text-amber-900" colspan="2">${escaparHtml(f.cualitativaOVP)}</td>
                             <td class="p-1.5 text-slate-400" title="OVP es cualitativa: no aplica equivalencia RGLOEI ni entra en el promedio general">—</td>
+                        </tr>`;
+                        return;
+                    }
+                    if(esCualitativoElemental) {
+                        tablaFilasAsignaturas += `
+                        <tr class="border-b divide-x text-center">
+                            <td class="p-1.5 font-bold text-slate-500 w-8">${idx+1}</td>
+                            <td class="p-1.5 text-left uppercase font-medium">${escaparHtml(f.nombre)}</td>
+                            <td class="p-1.5 font-bold">${L(f.t1)}</td>
+                            <td class="p-1.5 font-bold">${L(f.t2)}</td>
+                            <td class="p-1.5 font-bold">${L(f.t3)}</td>
+                            <td class="p-1.5 font-black bg-emerald-50">${L(f.nota)}</td>
+                            <td class="p-1.5 font-bold">${nivelCorto(f.nota)}</td>
+                            <td class="p-1.5 font-bold">${equivNum(f.nota)}</td>
                         </tr>`;
                         return;
                     }
@@ -12798,9 +13235,9 @@ ${estilosHtml}
                 if (!ocultarPromedioGeneral) tablaFilasAsignaturas += `
                     <tr class="border-t-2 border-slate-800 divide-x text-center bg-emerald-50 font-black">
                         <td class="p-1.5" colspan="5">PROMEDIO GENERAL DE ASIGNATURAS <span class="font-normal text-[9px] normal-case">(no incluye OVP, es cualitativa)</span></td>
-                        <td class="p-1.5">${promedioGeneral || '-'}</td>
-                        <td class="p-1.5">${obtenerEscalaAlfabetica(promedioGeneral)}</td>
-                        <td class="p-1.5">${obtenerEquivalenciaRGLOEI(promedioGeneral).sigla}</td>
+                        <td class="p-1.5">${esCualitativoElemental ? L(promedioGeneral) : (promedioGeneral || '-')}</td>
+                        <td class="p-1.5">${esCualitativoElemental ? nivelCorto(promedioGeneral) : obtenerEscalaAlfabetica(promedioGeneral)}</td>
+                        <td class="p-1.5">${esCualitativoElemental ? equivNum(promedioGeneral) : obtenerEquivalenciaRGLOEI(promedioGeneral).sigla}</td>
                     </tr>`;
             } else {
                 filasAsignaturas.forEach((f, idx) => {
@@ -12811,6 +13248,17 @@ ${estilosHtml}
                             <td class="p-1.5 text-left uppercase font-medium">${escaparHtml(f.nombre)}</td>
                             <td class="p-1.5 font-bold text-amber-900" colspan="2">${escaparHtml(f.cualitativaOVP)}</td>
                             <td class="p-1.5 text-slate-400" title="OVP es cualitativa: no aplica equivalencia RGLOEI">—</td>
+                        </tr>`;
+                        return;
+                    }
+                    if(esCualitativoElemental) {
+                        tablaFilasAsignaturas += `
+                        <tr class="border-b divide-x text-center">
+                            <td class="p-1.5 font-bold text-slate-500 w-8">${idx+1}</td>
+                            <td class="p-1.5 text-left uppercase font-medium">${escaparHtml(f.nombre)}</td>
+                            <td class="p-1.5 font-black">${L(f.nota)}</td>
+                            <td class="p-1.5 font-bold">${nivelCorto(f.nota)}</td>
+                            <td class="p-1.5 font-bold">${equivNum(f.nota)}</td>
                         </tr>`;
                         return;
                     }
@@ -12830,9 +13278,9 @@ ${estilosHtml}
                 if (!ocultarPromedioGeneral) tablaFilasAsignaturas += `
                     <tr class="border-t-2 border-slate-800 divide-x text-center bg-emerald-50 font-black">
                         <td class="p-1.5" colspan="2">PROMEDIO GENERAL DE ASIGNATURAS <span class="font-normal text-[9px] normal-case">(no incluye OVP, es cualitativa)</span></td>
-                        <td class="p-1.5">${promedioGeneral || '-'}</td>
-                        <td class="p-1.5">${obtenerEscalaAlfabetica(promedioGeneral)}</td>
-                        <td class="p-1.5">${obtenerEquivalenciaRGLOEI(promedioGeneral).sigla}</td>
+                        <td class="p-1.5">${esCualitativoElemental ? L(promedioGeneral) : (promedioGeneral || '-')}</td>
+                        <td class="p-1.5">${esCualitativoElemental ? nivelCorto(promedioGeneral) : obtenerEscalaAlfabetica(promedioGeneral)}</td>
+                        <td class="p-1.5">${esCualitativoElemental ? equivNum(promedioGeneral) : obtenerEquivalenciaRGLOEI(promedioGeneral).sigla}</td>
                     </tr>`;
             }
 
@@ -12903,8 +13351,8 @@ ${estilosHtml}
                                         ` : `
                                         <th class="p-1.5 border w-16">Calificación</th>
                                         `}
-                                        <th class="p-1.5 border w-16">Cualitativo</th>
-                                        <th class="p-1.5 border w-16">RGLOEI</th>
+                                        <th class="p-1.5 border w-16">${esCualitativoElemental ? 'Nivel de logro' : 'Cualitativo'}</th>
+                                        <th class="p-1.5 border w-16">${esCualitativoElemental ? 'Equiv. /10' : 'RGLOEI'}</th>
                                     </tr>
                                 </thead>
                                 <tbody>${tablaFilasAsignaturas}</tbody>
@@ -12975,7 +13423,9 @@ ${estilosHtml}
             const periodo = selPeriodo ? selPeriodo.value : 'anual';
             const etiquetasPeriodoCorta = { t1: '1er Trimestre', t2: '2do Trimestre', t3: '3er Trimestre', anual: 'Resumen Anual', supletorio: 'Anual (luego del Supletorio)' };
 
-            const { filasAsignaturas, promedioGeneral, esAnual } = calcularDatosAsignaturasBoletin(curso, estId, periodo);
+            const { filasAsignaturas, promedioGeneral, esAnual, esCualitativoElemental } = calcularDatosAsignaturasBoletin(curso, estId, periodo);
+            const LC = (v) => (v === '' || v === undefined || v === null || isNaN(v)) ? '-' : numeroALetraCualitativa(v);
+            const nivelC = (v) => (v === '' || v === undefined || v === null || isNaN(v)) ? '-' : nivelDestrezaCualitativa(v).corto;
 
             let filasHtml = '';
             filasAsignaturas.forEach((f, idx) => {
@@ -12984,6 +13434,15 @@ ${estilosHtml}
                     <tr class="border-b divide-x text-center bg-amber-50">
                         <td class="p-0.5 text-left uppercase">${escaparHtml(f.nombre)}</td>
                         <td class="p-0.5 font-bold" colspan="2">${escaparHtml(f.cualitativaOVP)}</td>
+                    </tr>`;
+                    return;
+                }
+                if(esCualitativoElemental) {
+                    filasHtml += `
+                    <tr class="border-b divide-x text-center">
+                        <td class="p-0.5 text-left uppercase">${escaparHtml(f.nombre)}</td>
+                        <td class="p-0.5 font-black">${LC(f.nota)}</td>
+                        <td class="p-0.5 font-bold">${nivelC(f.nota)}</td>
                     </tr>`;
                     return;
                 }
@@ -13015,15 +13474,15 @@ ${estilosHtml}
                         <tr class="bg-slate-800 text-white text-center">
                             <th class="p-0.5 text-left">Asignatura</th>
                             <th class="p-0.5 w-10">Nota</th>
-                            <th class="p-0.5 w-8">Cual.</th>
+                            <th class="p-0.5 ${esCualitativoElemental ? 'w-14' : 'w-8'}">${esCualitativoElemental ? 'Nivel' : 'Cual.'}</th>
                         </tr>
                     </thead>
                     <tbody>${filasHtml}</tbody>
                     <tfoot>
                         <tr class="bg-emerald-50 font-black text-center border-t-2 border-slate-800 ${curso.label === '3ro BGC' ? 'hidden' : ''}">
                             <td class="p-0.5 text-left">PROMEDIO GENERAL</td>
-                            <td class="p-0.5">${promedioGeneral || '-'}</td>
-                            <td class="p-0.5">${obtenerEscalaAlfabetica(promedioGeneral)}</td>
+                            <td class="p-0.5">${esCualitativoElemental ? LC(promedioGeneral) : (promedioGeneral || '-')}</td>
+                            <td class="p-0.5">${esCualitativoElemental ? nivelC(promedioGeneral) : obtenerEscalaAlfabetica(promedioGeneral)}</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -13188,12 +13647,16 @@ ${estilosHtml}
             document.getElementById('plan-firma-vicerrector').innerText = obtenerNombreVicerrectorParaCurso(curso);
 
             const esAmbitosRefuerzo = esCursoDeAmbitosCualitativo(curso);
+            // 2do-4to EGB (2026-10-10): ingresan a Plan de Refuerzo los/las estudiantes con letra de E- a C+
+            // (equivalente 1 a 6, es decir, menos de 7 una vez redondeado a la letra — calcularTrimestre ya
+            // entrega la nota redondeada), tal cual dice la normativa; de A+ a B- no ingresan.
+            const esCualElemRefuerzo = esCursoCualitativoElemental(curso);
 
             // Ámbitos (Inicial/Preparatoria) no tienen "Anual"/"Supletorio" como bloque crítico aparte
             // (ya no aplica), y el criterio de alerta cambia de "Menor a 7" a "Destreza Iniciada".
             ['t1','t2','t3'].forEach(p => {
                 const opt = document.getElementById(`opt-refuerzo-${p}`);
-                if (opt) opt.innerText = `${{t1:'1er',t2:'2do',t3:'3er'}[p]} Trimestre (${esAmbitosRefuerzo ? 'D+, D-, E+, E-' : 'Menor a 7'})`;
+                if (opt) opt.innerText = `${{t1:'1er',t2:'2do',t3:'3er'}[p]} Trimestre (${esAmbitosRefuerzo ? 'D+, D-, E+, E-' : (esCualElemRefuerzo ? 'C+ a E-' : 'Menor a 7')})`;
             });
 
             let alumnosCriticos = [];
@@ -13217,11 +13680,12 @@ ${estilosHtml}
                         let n3 = calcularTrimestre(curso.calificaciones[est.id].t3).notaFinal;
                         if(n1!=='' && n2!=='' && n3!=='') {
                             nota = ((parseFloat(n1)+parseFloat(n2)+parseFloat(n3))/3).toFixed(2);
+                            if (esCualElemRefuerzo) nota = String(Math.round(parseFloat(nota))); // letra más cercana
                         }
                     }
 
                     if(nota !== '' && parseFloat(nota) < 7.00) {
-                        alumnosCriticos.push({ est: est, nota: nota });
+                        alumnosCriticos.push({ est: est, nota: esCualElemRefuerzo ? numeroALetraCualitativa(nota) : nota });
                     }
                 });
             }
@@ -13229,7 +13693,9 @@ ${estilosHtml}
             if(alumnosCriticos.length === 0) {
                 lista.innerHTML = esAmbitosRefuerzo
                     ? '<p class="text-xs text-slate-400 p-2 bg-slate-100 rounded text-center">✅ No existen estudiantes con Destreza o Aprendizaje Iniciado en este periodo.</p>'
-                    : '<p class="text-xs text-slate-400 p-2 bg-slate-100 rounded text-center">✅ No existen estudiantes con rendimiento inferior a 7.00 en este periodo.</p>';
+                    : (esCualElemRefuerzo
+                        ? '<p class="text-xs text-slate-400 p-2 bg-slate-100 rounded text-center">✅ No existen estudiantes con calificación entre C+ y E- en este periodo.</p>'
+                        : '<p class="text-xs text-slate-400 p-2 bg-slate-100 rounded text-center">✅ No existen estudiantes con rendimiento inferior a 7.00 en este periodo.</p>');
                 limpiarFichaPlan();
                 return;
             }
@@ -13307,7 +13773,9 @@ ${estilosHtml}
             document.getElementById('plan-nee').innerText = est.nee;
             document.getElementById('plan-nota').innerText = esCursoDeAmbitosCualitativo(curso)
                 ? `${nota} (${(ESCALA_DESTREZAS_CUALITATIVA.find(e => e.val === nota) || {}).grupo || 'Destreza o aprendizaje iniciado'})`
-                : `${nota} / 10.00 (${obtenerEquivalenciaRGLOEI(nota).desc})`;
+                : (esCursoCualitativoElemental(curso)
+                    ? `${nota} (${nivelDestrezaCualitativa(nota).largo})`
+                    : `${nota} / 10.00 (${obtenerEquivalenciaRGLOEI(nota).desc})`);
             document.getElementById('plan-firma-docente').innerText = formatearNombreFirma(db.configGeneral.docente || 'Docente Sin Configurar');
             // Director/a | Coordinador/a - Área | Nivel: siempre editable (de Inicial a 3ro BGC).
             const inputCoordPlanB = document.getElementById('plan-firma-coordinador');
