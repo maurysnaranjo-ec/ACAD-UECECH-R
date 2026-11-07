@@ -3702,6 +3702,7 @@
 
         // ─────────────────────────── Guardado hacia la nube (reemplaza a localStorage) ───────────────────────────
         function marcarPendienteDeGuardar() {
+            if (typeof programarActualizacionEspacioNube === 'function') programarActualizacionEspacioNube(); // indicador "Espacio usado"
             const el = document.getElementById('estado-guardado-nube');
             if (!el) return;
             el.textContent = '● Cambios pendientes de guardar...';
@@ -8176,6 +8177,7 @@ ${estilosHtml}
                 }
             });
             cerrarMenusDesplegables();
+            programarActualizacionEspacioNube(); // indicador "Espacio usado en la hoja de cálculo"
 
             if(target === 'refuerzo') filtrarAlertasRefuerzo();
             if(target === 'boletines') actualizarSelectorBoletines();
@@ -9813,6 +9815,7 @@ ${estilosHtml}
         }
 
         function renderizarTodo() {
+            programarActualizacionEspacioNube(); // indicador "Espacio usado en la hoja de cálculo"
             const curso = db.cursos[db.cursoActivoIndex];
             const tbodyEst = document.getElementById('tabla-estudiantes-body');
             const puedeEditar = puedeEditarNomina();
@@ -12380,6 +12383,168 @@ ${estilosHtml}
                 return (sNum >= 7.00 ? 7.00 : prom).toFixed(2);
             }
             return prom.toFixed(2);
+        }
+
+        // ═══════════════ ESPACIO USADO EN LA HOJA DE CÁLCULO (todas las pestañas, 2026-11) ═══════════════
+        // Google Sheets admite máx. 50.000 caracteres por celda. Cada pestaña muestra cuánto ocupa la(s)
+        // celda(s) donde se guarda lo que se digita en ella, calculado igual que lo reparte Código.gs:
+        //  · guardarNucleo → Datos_Nucleo (nómina...), Datos_Conducta, Datos_InfoEst, Datos_InformesAcomp,
+        //    Datos_Convocatorias (incluye Registro de Asistencia a la Junta) y Datos_ActasJunta.
+        //  · guardarExterna → Datos_Materias (calificaciones), Datos_Refuerzo y Datos_NEE (uno por estudiante).
+        //  · Asistencia diaria (una celda por semana), Horarios (una por tipo), Informe de Asignatura
+        //    (una por periodo; ese tiene además su propio contador con bloqueo, ver iaActualizarContador).
+        // Solo informa (con colores y aviso); no bloquea la escritura.
+        const LIMITE_CELDA_SHEETS = 50000;
+        const ETIQUETAS_PERIODO_IA = { t1: '1er Trimestre', t2: '2do Trimestre', t3: '3er Trimestre', anual: 'Anual', anual_supletorio: 'Anual (luego del Supletorio)' };
+        const ESPACIO_POR_PESTANA = {
+            config: ['config'], estudiantes: ['nucleo'], otras_materias: ['nucleo'], conducta: ['conducta'],
+            asistencia_diaria: ['asistencia'], horarios: ['horarios'], info_estudiantes: ['infoEst'],
+            trimestre1: ['materia'], trimestre2: ['materia'], trimestre3: ['materia'], anual: ['materia'],
+            convocatoria: ['convocatorias'], registro_asistencia: ['convocatorias'], acta_junta: ['actasJunta'],
+            informe_acompanamiento: ['informesAcomp'], refuerzo: ['refuerzo'], informe_nee: ['nee'],
+            boletines: [], certificado_asistencia: []
+        };
+
+        function tamJsonNube(obj) {
+            if (obj === undefined || obj === null) return 0;
+            try { return JSON.stringify(obj).length; } catch (e) { return 0; }
+        }
+        function esVacioProfundoNube(v) {
+            if (v === null || v === undefined || v === '') return true;
+            if (Array.isArray(v)) return v.every(esVacioProfundoNube);
+            if (typeof v === 'object') return Object.keys(v).every(k => esVacioProfundoNube(v[k]));
+            return false;
+        }
+        // Igual que compactarNucleoParaGuardar_ de Código.gs (quita esqueletos vacíos), sobre una copia.
+        function compactarNucleoParaMedir(nucleo) {
+            const n = JSON.parse(JSON.stringify(nucleo));
+            ['otrasMaterias', 'asignaturasFijas'].forEach(k => {
+                const mapa = n[k];
+                if (!mapa || typeof mapa !== 'object') return;
+                Object.keys(mapa).forEach(id => {
+                    const ent = mapa[id];
+                    if (ent && typeof ent === 'object') {
+                        Object.keys(ent).forEach(sub => {
+                            const v = ent[sub];
+                            if (k === 'asignaturasFijas' && v && typeof v === 'object' && !Array.isArray(v)) {
+                                Object.keys(v).forEach(x => { if (esVacioProfundoNube(v[x])) delete v[x]; });
+                            } else if (esVacioProfundoNube(v)) delete ent[sub];
+                        });
+                    }
+                    if (esVacioProfundoNube(ent)) delete mapa[id];
+                });
+            });
+            return n;
+        }
+
+        // Lista de celdas del curso activo: [{ grupo, etiqueta, tam }].
+        function celdasNubeCursoActivo() {
+            const curso = db.cursos && db.cursos[db.cursoActivoIndex];
+            if (!curso) return [];
+            const celdas = [];
+            const add = (grupo, etiqueta, obj) => { if (obj !== undefined && obj !== null) celdas.push({ grupo, etiqueta, tam: tamJsonNube(obj) }); };
+            const nombreEst = (id) => { const e = (curso.estudiantes || []).find(x => x.id === id); return e ? e.nombre : id; };
+
+            let payloads = [];
+            try { payloads = (typeof construirPayloadGuardadoActual === 'function' && construirPayloadGuardadoActual()) || []; } catch (e) { payloads = []; }
+            if (!payloads.length) {
+                // Sin sesión en la nube (p. ej. uso local): se arma con lo que hay en el curso.
+                const datosMateria = {};
+                (curso.estudiantes || []).forEach(est => {
+                    const c = curso.calificaciones && curso.calificaciones[est.id];
+                    datosMateria[est.id] = {
+                        t1: c && c.t1, t2: c && c.t2, t3: c && c.t3, supletorio: (curso.supletorios && curso.supletorios[est.id]) || '',
+                        textoRefuerzo: (curso.textosRefuerzo && curso.textosRefuerzo[est.id]) || null,
+                        informeNEE: (curso.informesNEE && curso.informesNEE[est.id]) || null
+                    };
+                });
+                payloads = [
+                    { accion: 'guardarNucleo', datos: {
+                        anio: curso.anio, jornada: curso.jornada, docenteOVP: curso.docenteOVP, estudiantes: curso.estudiantes,
+                        conducta: curso.conducta, ovp: curso.ovp, otrasMaterias: curso.otrasMaterias, convocatorias: curso.convocatorias,
+                        actasJunta: curso.actasJunta, informesAcompanamiento: curso.informesAcompanamiento,
+                        infoGeneralEstudiantes: curso.infoGeneralEstudiantes, directivaPPFF: curso.directivaPPFF, directivaEstudiantes: curso.directivaEstudiantes } },
+                    { accion: 'guardarExterna', materia: curso.asignatura || '', datos: esCursoInicialOPreparatoria(curso) ? (curso.calificacionesAmbitos || {}) : datosMateria },
+                    { accion: 'guardarInformeAsignatura', datos: curso.informesAsignatura || {} }
+                ];
+            }
+
+            const FUERA_DEL_NUCLEO = ['conducta', 'infoGeneralEstudiantes', 'directivaPPFF', 'directivaEstudiantes', 'informesAcompanamiento', 'convocatorias', 'actasJunta'];
+            payloads.forEach(p => {
+                const d = p.datos || {};
+                if (p.accion === 'guardarNucleo') {
+                    const slim = {};
+                    Object.keys(d).forEach(k => { if (!FUERA_DEL_NUCLEO.includes(k)) slim[k] = d[k]; });
+                    add('nucleo', 'Nómina y datos del curso', compactarNucleoParaMedir(slim));
+                    add('conducta', 'Registro conductual', d.conducta);
+                    add('infoEst', 'Información de estudiantes y directivas', { infoGeneralEstudiantes: d.infoGeneralEstudiantes, directivaPPFF: d.directivaPPFF, directivaEstudiantes: d.directivaEstudiantes });
+                    add('informesAcomp', 'Informes de acompañamiento (todos los periodos)', d.informesAcompanamiento);
+                    add('convocatorias', 'Convocatorias y registros de asistencia a la Junta (todos los periodos)', d.convocatorias);
+                    add('actasJunta', 'Actas de Junta (todos los periodos)', d.actasJunta);
+                } else if (p.accion === 'guardarExterna') {
+                    const m = p.materia || '';
+                    if (m === 'ingles' || m === 'cultura' || m.trim().toUpperCase() === 'OVP' || esMateriaCualitativaPorNombre(m)) { // misma regla que guardarExterna
+                        add('materia', `Calificaciones de ${m || 'la asignatura'}`, d);
+                    } else {
+                        const calif = {};
+                        Object.keys(d).forEach(estId => {
+                            const x = d[estId] || {};
+                            calif[estId] = { t1: x.t1, t2: x.t2, t3: x.t3, supletorio: x.supletorio };
+                            if (x.textoRefuerzo && !esVacioProfundoNube(x.textoRefuerzo)) add('refuerzo', `Plan de refuerzo de ${nombreEst(estId)}`, x.textoRefuerzo);
+                            if (x.informeNEE && !esVacioProfundoNube(x.informeNEE)) add('nee', `Informe NEE de ${nombreEst(estId)}`, x.informeNEE);
+                        });
+                        add('materia', `Calificaciones de ${m || 'la asignatura'}`, calif);
+                    }
+                } else if (p.accion === 'guardarInformeAsignatura') {
+                    Object.keys(d).forEach(per => add('informeAsig', `Informe de Asignatura ${ETIQUETAS_PERIODO_IA[per] || per}`, d[per]));
+                }
+            });
+            Object.keys(curso.asistenciaDiaria || {}).forEach(sem => add('asistencia', `Asistencia de la semana del ${sem}`, curso.asistenciaDiaria[sem]));
+            Object.keys(curso.horarios || {}).forEach(t => add('horarios', `Horario "${t}"`, curso.horarios[t]));
+            const cfg = db.configGeneral || {};
+            add('config', 'Feriados del año lectivo', cfg.feriados || []);
+            return celdas;
+        }
+
+        function asegurarIndicadorEspacio(seccion) {
+            let el = seccion.querySelector(':scope > .espacio-nube-indicador');
+            if (!el) {
+                el = document.createElement('div');
+                el.className = 'espacio-nube-indicador no-print';
+                seccion.insertBefore(el, seccion.firstChild);
+            }
+            return el;
+        }
+
+        function actualizarIndicadoresEspacioNube() {
+            let celdas = null;
+            Object.keys(ESPACIO_POR_PESTANA).forEach(pestana => {
+                const seccion = document.getElementById(`sec-${pestana}`);
+                if (!seccion) return;
+                const el = asegurarIndicadorEspacio(seccion);
+                const grupos = ESPACIO_POR_PESTANA[pestana];
+                if (!grupos.length) {
+                    el.className = 'espacio-nube-indicador no-print text-[10px] font-bold px-2 py-1 mb-2 rounded border bg-slate-50 border-slate-200 text-slate-500';
+                    el.textContent = '💾 Este documento no guarda datos propios en la hoja de cálculo: se genera con lo ya registrado.';
+                    return;
+                }
+                if (celdas === null) celdas = celdasNubeCursoActivo();
+                const propias = celdas.filter(c => grupos.includes(c.grupo)).sort((a, b) => b.tam - a.tam);
+                const mayor = propias[0] || { etiqueta: 'Sin datos todavía', tam: 0 };
+                const pct = mayor.tam / LIMITE_CELDA_SHEETS;
+                const color = pct >= 0.9 ? 'bg-red-50 border-red-300 text-red-800' : pct >= 0.8 ? 'bg-amber-50 border-amber-300 text-amber-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800';
+                el.className = `espacio-nube-indicador no-print text-[10px] font-bold px-2 py-1 mb-2 rounded border ${color}`;
+                const detalle = propias.length > 1 ? ` · la celda más llena: ${mayor.etiqueta} (${propias.length} celdas en total)` : ` · ${mayor.etiqueta}`;
+                el.textContent = `💾 Espacio usado en la hoja de cálculo: ${mayor.tam.toLocaleString('es-EC')} / ${LIMITE_CELDA_SHEETS.toLocaleString('es-EC')} caracteres (${Math.round(pct * 100)} %)${detalle}`
+                    + (pct >= 0.9 ? ' — ⚠️ Muy cerca del límite: acorte textos o quite filas, o no se podrá guardar.' : pct >= 0.8 ? ' — Se está llenando.' : '');
+                el.title = propias.map(c => `${c.etiqueta}: ${c.tam.toLocaleString('es-EC')} caracteres`).join('\n') || 'Aún no hay datos guardados en esta pestaña.';
+            });
+        }
+
+        let temporizadorEspacioNube = null;
+        function programarActualizacionEspacioNube() {
+            clearTimeout(temporizadorEspacioNube);
+            temporizadorEspacioNube = setTimeout(() => { try { actualizarIndicadoresEspacioNube(); } catch (e) { console.warn('Indicador de espacio:', e); } }, 400);
         }
 
         function obtenerClaveTextoInforme(periodo) {
