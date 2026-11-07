@@ -1452,6 +1452,7 @@
                         <option value="anual_supletorio" id="opt-informe-asig-supletorio">🏆 Informe Anual (luego del Supletorio)</option>
                     </select>
                     <button id="btn-imprimir-informe-asignatura" onclick="imprimirInformeAsignaturaCompleto()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-3 py-1.5 rounded text-xs shadow whitespace-nowrap">🖨️ IMPRIMIR / DESCARGAR PDF</button>
+                    <span id="ia2-contador-tamano" class="text-[10px] font-bold text-slate-500 whitespace-nowrap" title="Cada informe (trimestre/anual) se guarda en su propia celda de Google Sheets, que admite hasta 50.000 caracteres.">Espacio usado: 0 / 45.000</span>
                 </div>
             </div>
 
@@ -1585,39 +1586,51 @@
                     <ul id="ia-lista-no-promovidos" class="list-none space-y-0.5 text-[10px] text-red-900"></ul>
                 </div>
 
-                <!-- 5. ANALISIS DE DESTREZAS -->
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">5. Análisis de Destrezas</div>
-                <table class="w-full border-collapse text-center border-b border-slate-800">
-                    <tr class="bg-slate-200 font-bold uppercase divide-x divide-slate-800 border-b border-slate-800 text-[10px]">
-                        <td class="p-1 w-1/3">N. de Destrezas Planificadas</td>
-                        <td class="p-1 w-1/3">N. de Destrezas Desarrolladas</td>
-                        <td class="p-1 w-1/3">Porcentaje Destrezas Logradas</td>
-                    </tr>
-                    <tr class="divide-x divide-slate-800 no-print-border">
-                        <td class="p-0 bg-yellow-200"><input type="number" min="0" id="ia-destrezas-planificadas" oninput="guardarTextoInformeAsignatura()" class="w-full text-center bg-yellow-200 font-bold p-1 outline-none"></td>
-                        <td class="p-0 bg-yellow-200"><input type="number" min="0" id="ia-destrezas-desarrolladas" oninput="guardarTextoInformeAsignatura()" class="w-full text-center bg-yellow-200 font-bold p-1 outline-none"></td>
-                        <td class="p-1 bg-red-500 text-white font-black" id="ia-destrezas-porcentaje">0%</td>
-                    </tr>
-                </table>
+                <!-- ═══ REFORMA 2026-11: secciones 5 a 12 (antes: 5. Análisis de Destrezas, 5.1 Factores,
+                     6. Conclusiones, 7. Recomendaciones, 8. Observaciones, 9. Firmas). Los datos
+                     viejos NO se borran: se migran a estas tablas (ver migrarInformeAsignaturaV2).
+                     Las tablas de cada sección las arma renderizarSeccionesReformaIA() desde
+                     IA_ESQUEMA. -->
+                <div id="ia2-aviso-tamano" class="hidden no-print bg-red-100 border-b border-red-700 text-red-800 font-bold text-[11px] px-2 py-1"></div>
 
-                <!-- 5.1 FACTORES -->
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">5.1 Factores que no permitieron el 100% de desarrollo de destrezas</div>
-                <textarea id="ia-factores" oninput="guardarTextoInformeAsignatura()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-16 text-xs"></textarea>
+                <!-- 5. CUMPLIMIENTO DE LA PLANIFICACIÓN CURRICULAR -->
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">5. Cumplimiento de la Planificación Curricular</div>
+                <div id="ia2-sec-cumplimiento" class="border-b border-slate-800"></div>
 
-                <!-- 6. CONCLUSIONES -->
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">6. Conclusiones</div>
-                <textarea id="ia-conclusiones" oninput="guardarTextoInformeAsignatura()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-16 text-xs"></textarea>
+                <!-- 5.1 RESULTADOS POR APRENDIZAJES / DESTREZAS -->
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">5.1 Resultados por Aprendizajes / Destrezas</div>
+                <div id="ia2-sec-resultados" class="border-b border-slate-800"></div>
 
-                <!-- 7. RECOMENDACIONES -->
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">7. Recomendaciones</div>
-                <textarea id="ia-recomendaciones" oninput="guardarTextoInformeAsignatura()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-16 text-xs"></textarea>
+                <!-- 6. IDENTIFICACIÓN DE ALERTAS TEMPRANAS -->
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">6. Identificación de Alertas Tempranas</div>
+                <div id="ia2-sec-alertas" class="border-b border-slate-800"></div>
 
-                <!-- 8. OBSERVACIONES -->
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">8. Observaciones</div>
-                <textarea id="ia-observaciones" oninput="guardarTextoInformeAsignatura()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-20 text-xs"></textarea>
+                <!-- 6.1 CONSOLIDACIÓN DE ALERTAS -->
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">6.1. Consolidación de Alertas</div>
+                <div id="ia2-sec-consolidado" class="border-b border-slate-800"></div>
 
-                <!-- 9. FIRMAS -->
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">9. Firmas</div>
+                <!-- 7. REFUERZO PEDAGÓGICO Y ACOMPAÑAMIENTO -->
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">7. Refuerzo Pedagógico y Acompañamiento</div>
+                <div id="ia2-sec-refuerzoPed" class="border-b border-slate-800"></div>
+
+                <!-- 8. ATENCIÓN A LAS NEE Y AJUSTES RAZONABLES -->
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">8. Atención a las Necesidades Educativas Específicas y Ajustes Razonables</div>
+                <div id="ia2-sec-nee" class="border-b border-slate-800"></div>
+
+                <!-- 9. CONCLUSIONES DEL DOCENTE -->
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">9. Conclusiones del Docente</div>
+                <div id="ia2-sec-conclusiones" class="border-b border-slate-800"></div>
+
+                <!-- 10. RECOMENDACIONES Y COMPROMISOS PARA LA JUNTA -->
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">10. Recomendaciones y Compromisos para la Junta</div>
+                <div id="ia2-sec-compromisos" class="border-b border-slate-800"></div>
+
+                <!-- 11. OBSERVACIONES (mismo campo 'observaciones' de antes) -->
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">11. Observaciones</div>
+                <textarea id="ia-observaciones" maxlength="1500" oninput="guardarTextoInformeAsignatura(this)" class="ia2-autoalto w-full p-2 border-b border-slate-800 outline-none resize-none h-20 text-xs" placeholder="Escriba aquí las observaciones generales del informe."></textarea>
+
+                <!-- 12. FIRMAS DE RESPONSABILIDAD (igual que el formato anterior) -->
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">12. Firmas de Responsabilidad</div>
                 <table class="w-full border-collapse text-center">
                     <tr class="bg-slate-200 font-bold uppercase divide-x divide-slate-800 border-b border-slate-800">
                         <td class="p-1 w-1/3">Elaborado por:</td>
@@ -1630,7 +1643,7 @@
                             <p class="text-[9px] uppercase">Docente</p>
                         </td>
                         <td class="p-3 h-16 align-bottom">
-                            <input type="text" id="ia-firma-revisa" placeholder="Nombre del Director/a o Coordinador/a" oninput="guardarTextoInformeAsignatura()" class="w-full text-center outline-none no-print-border bg-transparent doc-firma-nombre">
+                            <input type="text" id="ia-firma-revisa" maxlength="150" placeholder="Nombre del Director/a o Coordinador/a" oninput="guardarTextoInformeAsignatura(this)" class="w-full text-center outline-none no-print-border bg-transparent doc-firma-nombre">
                             <p class="text-[9px] uppercase">Director/a | Coordinador/a - Área | Nivel</p>
                         </td>
                         <td class="p-3 h-16 align-bottom">
@@ -5142,7 +5155,21 @@ ${estilosHtml}
             if (boton) { boton.disabled = true; boton.innerText = '⏳ Preparando...'; }
             try {
                 await esperarProximoFrame();
-                const html = capturarBloqueImprimible('#informe-asignatura-area');
+                // Reforma 2026-11: en el clon, las celdas editables se pasan a texto (sin placeholders
+                // y sin cortar textos largos); la pantalla no se modifica.
+                const original = document.querySelector('#informe-asignatura-area');
+                sincronizarValoresParaImpresion(original);
+                const clon = original.cloneNode(true);
+                clon.querySelectorAll('textarea, input[type="text"]').forEach(campo => {
+                    const div = document.createElement('div');
+                    div.className = campo.className.replace('ia2-autoalto', '');
+                    div.style.whiteSpace = 'pre-wrap';
+                    div.style.height = 'auto';
+                    div.textContent = (campo.tagName === 'TEXTAREA' ? campo.textContent : campo.getAttribute('value')) || '';
+                    if (!div.textContent) div.innerHTML = '&nbsp;';
+                    campo.replaceWith(div);
+                });
+                const html = capturarBloqueImprimible(clon);
                 abrirVentanaImpresionDocumentos('Informe de Asignatura', [{ html }], 'portrait', false);
             } finally {
                 if (boton) { boton.disabled = false; boton.innerText = textoOriginal; }
@@ -12348,31 +12375,322 @@ ${estilosHtml}
 
         function obtenerClaveTextoInforme(periodo) {
             const curso = db.cursos[db.cursoActivoIndex];
+            if(!curso.informesAsignatura) curso.informesAsignatura = {};
             if(!curso.informesAsignatura[periodo]) {
                 curso.informesAsignatura[periodo] = { planificadas: '', desarrolladas: '', factores: '', conclusiones: '', recomendaciones: '', observaciones: '', revisadoPor: '', aprobadoPor: '' };
             }
-            return curso.informesAsignatura[periodo];
+            return migrarInformeAsignaturaV2(curso.informesAsignatura[periodo]);
         }
 
-        function guardarTextoInformeAsignatura() {
-            const periodo = document.getElementById('filtro-periodo-informe-asig').value;
-            const datos = obtenerClaveTextoInforme(periodo);
-            datos.planificadas = document.getElementById('ia-destrezas-planificadas').value;
-            datos.desarrolladas = document.getElementById('ia-destrezas-desarrolladas').value;
-            datos.factores = document.getElementById('ia-factores').value;
-            datos.conclusiones = document.getElementById('ia-conclusiones').value;
-            datos.recomendaciones = document.getElementById('ia-recomendaciones').value;
-            datos.observaciones = document.getElementById('ia-observaciones').value;
-            datos.revisadoPor = document.getElementById('ia-firma-revisa').value;
+        // ═══════════════ Informe de Asignatura — REFORMA 2026-11 (secciones 5 a 12) ═══════════════
+        // Reemplaza 5. Análisis de Destrezas / 5.1 Factores / 6. Conclusiones / 7. Recomendaciones por:
+        // 5. Cumplimiento de la Planificación Curricular, 5.1 Resultados por Aprendizajes/Destrezas,
+        // 6. Alertas Tempranas, 6.1 Consolidación, 7. Refuerzo, 8. NEE, 9. Conclusiones, 10. Compromisos,
+        // 11. Observaciones y 12. Firmas. Igual para Inicial a 3ro BGC y para T1/T2/T3/Anual/Anual Sup.
+        //
+        // SIN PÉRDIDA DE DATOS: los campos viejos (planificadas, desarrolladas, factores, conclusiones,
+        // recomendaciones) NUNCA se borran ni se modifican — quedan como copia intacta en el mismo objeto.
+        // La estructura nueva (v: 2) se arma a partir de ellos la primera vez que se abre cada periodo.
+        //
+        // LÍMITE DE GOOGLE SHEETS: cada periodo se guarda en su propia celda (ver guardarInformeAsignatura
+        // en Código.gs, una fila "materia::periodo"), máximo 50.000 caracteres. Aquí se limita cada
+        // periodo a LIMITE_INFORME_POR_PERIODO (margen de seguridad): un cambio que lo supere NO se
+        // aplica (se devuelve el valor anterior y se avisa) — lo ya guardado nunca se recorta.
+        const LIMITE_INFORME_POR_PERIODO = 45000;
+        const COLUMNAS_JSON_FORMATO2_IA = ['JSON_Formato2', 'JSON_Formato2_parte2', 'JSON_Formato2_parte3']; // respaldo Excel
+        const MAX_CONCLUSIONES_IA = 15;
+        const COMPONENTES_CUMPLIMIENTO_IA = ['Unidades de aprendizaje', 'Destrezas con criterios de desempeño', 'Indicadores de evaluación', 'Inserciones curriculares', 'Estrategias metodológicas', 'Aplicación del DUA', 'Recursos didácticos'];
+        const ITEMS_CONSOLIDADO_IA = [
+            ['identificados', 'Estudiantes identificados en la alerta temprana.'],
+            ['notificados', 'Representantes notificados hasta la fecha'],
+            ['refuerzo', 'Estudiantes con refuerzo iniciado'],
+            ['pendientes', 'Casos pendientes de entrevista o contacto'],
+            ['concluidos', 'Estudiantes con seguimiento concluido']
+        ];
+        // Columnas de cada tabla editable. k = clave corta guardada (ahorra caracteres en la celda),
+        // ml = maxlength, ph = texto guía gris (no se guarda ni se imprime).
+        const IA_ESQUEMA = {
+            cumplimiento: { max: 15, numerar: true, boton: '➕ Agregar componente', cols: [
+                { k: 'c',  t: 'Componente', w: 'w-[22%]', ml: 150, ph: 'Nombre del componente' },
+                { k: 'p',  t: 'Planificado', w: 'w-[11%]', ml: 60, centro: true, ph: 'Ej.: 3' },
+                { k: 'e',  t: 'Ejecutado', w: 'w-[11%]', ml: 60, centro: true, ph: 'Ej.: 3' },
+                { k: 'cu', t: 'Cumplimiento', w: 'w-[13%]', ml: 60, centro: true, ph: 'Ej.: 100 %' },
+                { k: 'o',  t: 'Observación', ml: 600, ph: 'Ej.: Se desarrollaron las unidades previstas.' }
+            ] },
+            resultados: { max: 15, numerar: false, boton: '➕ Agregar aprendizaje / destreza', cols: [
+                { k: 'a',  t: 'Aprendizaje evaluado', ph: 'Ej.: Explica la organización de los seres vivos y sus niveles.' },
+                { k: 'ev', t: 'Evidencia utilizada', ph: 'Ej.: Organizador gráfico y preguntas de aplicación.' },
+                { k: 'l',  t: 'Logro del grupo', w: 'w-[11%]', ml: 60, ph: 'Ej.: Alto' },
+                { k: 'd',  t: 'Dificultad observada', ph: 'Ej.: Confusión puntual entre órgano y sistema.' },
+                { k: 'dp', t: 'Decisión pedagógica', ph: 'Ej.: Reforzar con modelos y ejemplos del cuerpo humano.' }
+            ] },
+            alertas: { max: 40, numerar: true, boton: '➕ Agregar estudiante', cols: [
+                { k: 'es', t: 'Estudiante', w: 'w-[16%]', ml: 150, ph: 'Ej.: A. C.' },
+                { k: 'ca', t: 'Calificación', w: 'w-[10%]', ml: 20, centro: true, ph: 'Ej.: 6,40' },
+                { k: 'd',  t: 'Dificultad identificada', ph: 'Ej.: No interpreta el flujo de energía en redes tróficas.' },
+                { k: 'co', t: 'Comunicación al representante', ph: 'Ej.: Notificación enviada; entrevista por coordinar.' },
+                { k: 'ac', t: 'Acción inicial', ph: 'Ej.: Ficha guiada y tutoría.' }
+            ] },
+            refuerzoPed: { max: 40, numerar: false, boton: '➕ Agregar estudiante', cols: [
+                { k: 'es',  t: 'Estudiante', w: 'w-[14%]', ml: 150, ph: 'Ej.: A. C.' },
+                { k: 'ap',  t: 'Aprendizaje por fortalecer', ph: 'Ej.: Flujo de energía.' },
+                { k: 'est', t: 'Estrategia', ph: 'Ej.: Construcción de una red trófica con tarjetas y explicación oral.' },
+                { k: 'ev',  t: 'Evidencia de seguimiento', ph: 'Ej.: Lista de cotejo y explicación individual.' },
+                { k: 'st',  t: 'Estado', w: 'w-[12%]', ml: 60, ph: 'Ej.: En ejecución.' }
+            ] },
+            nee: { max: 20, numerar: false, boton: '➕ Agregar estudiante', cols: [
+                { k: 'cod', t: 'Estudiante (código)', w: 'w-[14%]', ml: 150, ph: 'Ej.: APGR. NEE-AR' },
+                { k: 'ba',  t: 'Barrera o necesidad de apoyo', ph: 'Ej.: Requiere apoyos para comprender consignas extensas.' },
+                { k: 'ap',  t: 'Apoyo / ajuste', ph: 'Ej.: Consignas breves, secuenciadas y apoyadas con imágenes.' },
+                { k: 'ev',  t: 'Forma de evaluación', ph: 'Ej.: Respuesta oral, selección de imágenes y actividad práctica.' },
+                { k: 'se',  t: 'Seguimiento', ph: 'Ej.: Revisar evidencias y eficacia del apoyo.' }
+            ] },
+            compromisos: { max: 15, numerar: true, boton: '➕ Agregar compromiso', cols: [
+                { k: 'ac', t: 'Acción / compromiso', ml: 500, ph: 'Ej.: Verificar que todos los representantes de estudiantes con alerta hayan sido informados.' },
+                { k: 're', t: 'Responsable', w: 'w-[20%]', ml: 150, ph: 'Ej.: Docente de asignatura.' },
+                { k: 'fe', t: 'Fecha de seguimiento', w: 'w-[16%]', ml: 150, ph: 'Ej.: En una semana.' },
+                { k: 'ev', t: 'Evidencia', w: 'w-[20%]', ml: 400, ph: 'Ej.: Registro de comunicación.' }
+            ] }
+        };
+        const LISTAS_TABLA_IA = Object.keys(IA_ESQUEMA);
+
+        function iaFilaVacia(lista) {
+            const fila = {};
+            IA_ESQUEMA[lista].cols.forEach(c => { fila[c.k] = ''; });
+            return fila;
+        }
+
+        function iaPartirLineas(texto) {
+            return String(texto === null || texto === undefined ? '' : texto).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+        }
+
+        // "12" y "11" -> "91,7 %"; "3" y "3" -> "100 %". null si alguno no es un número válido.
+        function iaFormatearPorcentaje(planificado, ejecutado) {
+            const esNum = (v) => /^\s*\d+([.,]\d+)?\s*$/.test(String(v === null || v === undefined ? '' : v));
+            if (!esNum(planificado) || !esNum(ejecutado)) return null;
+            const p = parseFloat(String(planificado).replace(',', '.'));
+            const e = parseFloat(String(ejecutado).replace(',', '.'));
+            if (!(p > 0)) return null;
+            const v = Math.round((e / p) * 1000) / 10;
+            return (Number.isInteger(v) ? String(v) : v.toFixed(1).replace('.', ',')) + ' %';
+        }
+
+        // Convierte un periodo del formato anterior al nuevo SIN tocar los campos viejos. Idempotente:
+        // si ya es v2 solo repara estructuras faltantes (p. ej. tras importar un Excel incompleto).
+        function migrarInformeAsignaturaV2(datos) {
+            if (!datos || typeof datos !== 'object') return datos;
+            if (datos.v !== 2) {
+                const cumplimiento = COMPONENTES_CUMPLIMIENTO_IA.map(c => ({ c, p: '', e: '', cu: '', o: '', fijo: 1 }));
+                const filaDestrezas = cumplimiento[1]; // "Destrezas con criterios de desempeño"
+                if (datos.planificadas !== undefined && datos.planificadas !== null && datos.planificadas !== '') filaDestrezas.p = String(datos.planificadas);
+                if (datos.desarrolladas !== undefined && datos.desarrolladas !== null && datos.desarrolladas !== '') filaDestrezas.e = String(datos.desarrolladas);
+                filaDestrezas.cu = iaFormatearPorcentaje(filaDestrezas.p, filaDestrezas.e) || '';
+                if (datos.factores) filaDestrezas.o = String(datos.factores);
+                datos.cumplimiento = cumplimiento;
+                datos.resultados = [iaFilaVacia('resultados')];
+                datos.alertas = [iaFilaVacia('alertas')];
+                datos.refuerzoPed = [iaFilaVacia('refuerzoPed')];
+                datos.nee = [iaFilaVacia('nee')];
+                const conclusiones = iaPartirLineas(datos.conclusiones);
+                datos.conclusionesL = conclusiones.length ? conclusiones : [''];
+                const recomendaciones = iaPartirLineas(datos.recomendaciones);
+                datos.compromisos = recomendaciones.length
+                    ? recomendaciones.map(ac => ({ ac, re: '', fe: '', ev: '' }))
+                    : [iaFilaVacia('compromisos')];
+                datos.consolidado = {};
+                datos.v = 2;
+            }
+            LISTAS_TABLA_IA.forEach(lista => { if (!Array.isArray(datos[lista])) datos[lista] = []; });
+            if (!Array.isArray(datos.conclusionesL)) datos.conclusionesL = [];
+            if (!datos.consolidado || typeof datos.consolidado !== 'object') datos.consolidado = {};
+            ITEMS_CONSOLIDADO_IA.forEach(([k]) => { if (datos.consolidado[k] === undefined) datos.consolidado[k] = ''; });
+            return datos;
+        }
+
+        function iaDatosActuales() {
+            return obtenerClaveTextoInforme(document.getElementById('filtro-periodo-informe-asig').value);
+        }
+
+        function iaTamanoInforme(datos) {
+            return JSON.stringify(datos || {}).length;
+        }
+
+        function iaActualizarContador(datos) {
+            const el = document.getElementById('ia2-contador-tamano');
+            if (!el) return;
+            const tam = iaTamanoInforme(datos);
+            const pct = tam / LIMITE_INFORME_POR_PERIODO;
+            el.textContent = `Espacio usado: ${tam.toLocaleString('es-EC')} / ${LIMITE_INFORME_POR_PERIODO.toLocaleString('es-EC')}`;
+            el.className = 'text-[10px] font-bold whitespace-nowrap ' + (pct >= 0.95 ? 'text-red-700' : pct >= 0.8 ? 'text-amber-600' : 'text-slate-500');
+        }
+
+        function iaMostrarAviso(texto) {
+            const el = document.getElementById('ia2-aviso-tamano');
+            if (!el) return;
+            el.textContent = texto;
+            el.classList.remove('hidden');
+            clearTimeout(iaMostrarAviso._t);
+            iaMostrarAviso._t = setTimeout(() => el.classList.add('hidden'), 8000);
+        }
+
+        // Aplica un cambio SOLO si el informe del periodo sigue cabiendo en la celda; si no, lo revierte.
+        function iaAplicarCambioSeguro(datos, aplicar, revertir) {
+            aplicar();
+            const tam = iaTamanoInforme(datos);
+            if (tam > LIMITE_INFORME_POR_PERIODO) {
+                revertir();
+                iaMostrarAviso(`⚠️ Este informe llegó al máximo permitido (${LIMITE_INFORME_POR_PERIODO.toLocaleString('es-EC')} caracteres, para que entre en una celda de Google Sheets). El último cambio NO se aplicó: acorte algún texto o quite filas que no necesite.`);
+                iaActualizarContador(datos);
+                return false;
+            }
             salvar();
-            actualizarPorcentajeDestrezas();
+            iaActualizarContador(datos);
+            return true;
         }
 
-        function actualizarPorcentajeDestrezas() {
-            const plan = parseFloat(document.getElementById('ia-destrezas-planificadas').value) || 0;
-            const desa = parseFloat(document.getElementById('ia-destrezas-desarrolladas').value) || 0;
-            const pct = plan > 0 ? ((desa/plan)*100).toFixed(1) : 0;
-            document.getElementById('ia-destrezas-porcentaje').innerText = `${pct}%`;
+        function iaAutoAlto(el) {
+            if (!el || !el.scrollHeight) return; // pestaña oculta: no se puede medir, se deja el alto mínimo
+            el.style.height = 'auto';
+            el.style.height = el.scrollHeight + 'px';
+        }
+
+        function iaPlaceholderCalificacion(curso) {
+            if (esCursoDeAmbitosCualitativo(curso)) return 'Ej.: EP';   // Inicial y Preparatoria
+            if (esCursoCualitativoElemental(curso)) return 'Ej.: C+';   // 2do a 4to EGB
+            return 'Ej.: 6,40';                                          // 5to EGB a 3ro BGC
+        }
+
+        function iaCeldaEditable(lista, idx, col, valor, placeholder) {
+            return `<td class="p-0.5 align-top ${col.w || ''}"><textarea rows="1" data-campo="${col.k}" maxlength="${col.ml || 400}" placeholder="${escaparHtml(placeholder || col.ph || '')}" oninput="iaActualizarCampo('${lista}', ${idx}, '${col.k}', this)" class="ia2-autoalto w-full p-1 outline-none resize-none text-[10px] bg-transparent leading-tight ${col.centro ? 'text-center' : ''}">${escaparHtml(valor)}</textarea></td>`;
+        }
+
+        function iaBotonAgregar(lista, texto) {
+            return `<div class="no-print px-1 py-0.5 flex justify-end"><button onclick="iaAgregarFila('${lista}')" class="bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-bold px-2 py-0.5 rounded">${texto}</button></div>`;
+        }
+
+        function iaHtmlTabla(lista, datos, curso) {
+            const esq = IA_ESQUEMA[lista];
+            const filas = datos[lista];
+            const totalCols = esq.cols.length + (esq.numerar ? 1 : 0) + 1;
+            let h = `<table class="w-full border-collapse text-[10px]"><thead><tr class="bg-slate-200 font-bold uppercase divide-x divide-slate-800 border-b border-slate-800">`;
+            if (esq.numerar) h += `<td class="p-1 w-8 text-center">N.º</td>`;
+            esq.cols.forEach(c => { h += `<td class="p-1 ${c.w || ''} ${c.centro ? 'text-center' : 'text-left'}">${c.t}</td>`; });
+            h += `<td class="no-print w-6"></td></tr></thead><tbody class="divide-y divide-slate-400">`;
+            if (!filas.length) h += `<tr><td colspan="${totalCols}" class="p-2 text-slate-400 italic text-center">Sin registros.</td></tr>`;
+            filas.forEach((fila, idx) => {
+                h += `<tr class="divide-x divide-slate-400 align-top">`;
+                if (esq.numerar) h += `<td class="p-1 text-center font-bold">${idx + 1}</td>`;
+                esq.cols.forEach(c => {
+                    if (lista === 'cumplimiento' && c.k === 'c' && fila.fijo) {
+                        h += `<td class="p-1 align-top ${c.w || ''}">${escaparHtml(fila.c)}</td>`; // componente oficial: no editable
+                    } else {
+                        const ph = (lista === 'alertas' && c.k === 'ca') ? iaPlaceholderCalificacion(curso) : null;
+                        h += iaCeldaEditable(lista, idx, c, fila[c.k] || '', ph);
+                    }
+                });
+                h += `<td class="p-0.5 text-center align-top no-print"><button onclick="iaQuitarFila('${lista}', ${idx})" class="text-red-600 font-bold" title="Quitar fila">✕</button></td></tr>`;
+            });
+            h += `</tbody></table>`;
+            return h + iaBotonAgregar(lista, esq.boton);
+        }
+
+        function iaHtmlConsolidado(datos) {
+            let h = `<table class="w-full border-collapse text-[10px]"><thead><tr class="bg-slate-200 font-bold uppercase divide-x divide-slate-800 border-b border-slate-800"><td class="p-1 text-left">Consolidado de alertas</td><td class="p-1 w-1/4 text-center">Cantidad</td></tr></thead><tbody class="divide-y divide-slate-400">`;
+            ITEMS_CONSOLIDADO_IA.forEach(([k, etiqueta]) => {
+                h += `<tr class="divide-x divide-slate-400"><td class="p-1">${escaparHtml(etiqueta)}</td><td class="p-0.5"><input type="text" inputmode="numeric" maxlength="10" placeholder="0" value="${escaparHtml(datos.consolidado[k] || '')}" oninput="iaActualizarConsolidado('${k}', this)" class="w-full p-1 outline-none text-center text-[10px] bg-transparent font-bold"></td></tr>`;
+            });
+            return h + `</tbody></table>`;
+        }
+
+        function iaHtmlConclusiones(datos) {
+            let h = `<table class="w-full border-collapse text-[10px]"><thead><tr class="bg-slate-200 font-bold uppercase divide-x divide-slate-800 border-b border-slate-800"><td class="p-1 w-8 text-center">N.º</td><td class="p-1 text-left">Conclusión</td><td class="no-print w-6"></td></tr></thead><tbody class="divide-y divide-slate-400">`;
+            if (!datos.conclusionesL.length) h += `<tr><td colspan="3" class="p-2 text-slate-400 italic text-center">Sin conclusiones.</td></tr>`;
+            datos.conclusionesL.forEach((texto, idx) => {
+                h += `<tr class="divide-x divide-slate-400 align-top"><td class="p-1 text-center font-bold">${idx + 1}</td><td class="p-0.5"><textarea rows="1" maxlength="500" placeholder="Ej.: El curso presenta un promedio referencial de 7,68/10; sin embargo, ocho estudiantes requieren activar el procedimiento de alerta temprana." oninput="iaActualizarConclusion(${idx}, this)" class="ia2-autoalto w-full p-1 outline-none resize-none text-[10px] bg-transparent leading-tight">${escaparHtml(texto)}</textarea></td><td class="p-0.5 text-center align-top no-print"><button onclick="iaQuitarFila('conclusionesL', ${idx})" class="text-red-600 font-bold" title="Quitar conclusión">✕</button></td></tr>`;
+            });
+            return h + `</tbody></table>` + iaBotonAgregar('conclusionesL', '➕ Agregar conclusión');
+        }
+
+        function renderizarSeccionesReformaIA(datos, curso) {
+            const poner = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+            LISTAS_TABLA_IA.forEach(lista => poner(`ia2-sec-${lista}`, iaHtmlTabla(lista, datos, curso)));
+            poner('ia2-sec-consolidado', iaHtmlConsolidado(datos));
+            poner('ia2-sec-conclusiones', iaHtmlConclusiones(datos));
+            const obs = document.getElementById('ia-observaciones');
+            if (obs) obs.value = datos.observaciones || '';
+            iaActualizarContador(datos);
+            requestAnimationFrame(() => document.querySelectorAll('#informe-asignatura-area .ia2-autoalto').forEach(iaAutoAlto));
+        }
+
+        function iaActualizarCampo(lista, idx, campo, el) {
+            const datos = iaDatosActuales();
+            const fila = datos[lista] && datos[lista][idx];
+            if (!fila) return;
+            const anterior = fila[campo] || '';
+            const ok = iaAplicarCambioSeguro(datos, () => { fila[campo] = el.value; }, () => { fila[campo] = anterior; el.value = anterior; });
+            iaAutoAlto(el);
+            // Cumplimiento: se calcula solo (ejecutado / planificado) mientras esté vacío o sea un
+            // porcentaje; si el/la docente escribe otra cosa ("En proceso de consolidación"), se respeta.
+            if (ok && lista === 'cumplimiento' && (campo === 'p' || campo === 'e')) {
+                const pct = iaFormatearPorcentaje(fila.p, fila.e);
+                if (pct && (!fila.cu || /^\s*\d+([.,]\d+)?\s*%\s*$/.test(fila.cu)) && fila.cu !== pct) {
+                    const cuAnterior = fila.cu;
+                    const celdaCu = el.closest('tr') && el.closest('tr').querySelector('[data-campo="cu"]');
+                    if (iaAplicarCambioSeguro(datos, () => { fila.cu = pct; }, () => { fila.cu = cuAnterior; }) && celdaCu) celdaCu.value = pct;
+                }
+            }
+        }
+
+        function iaActualizarConsolidado(clave, el) {
+            const datos = iaDatosActuales();
+            const anterior = datos.consolidado[clave] || '';
+            iaAplicarCambioSeguro(datos, () => { datos.consolidado[clave] = el.value; }, () => { datos.consolidado[clave] = anterior; el.value = anterior; });
+        }
+
+        function iaActualizarConclusion(idx, el) {
+            const datos = iaDatosActuales();
+            if (idx >= datos.conclusionesL.length) return;
+            const anterior = datos.conclusionesL[idx] || '';
+            iaAplicarCambioSeguro(datos, () => { datos.conclusionesL[idx] = el.value; }, () => { datos.conclusionesL[idx] = anterior; el.value = anterior; });
+            iaAutoAlto(el);
+        }
+
+        function iaAgregarFila(lista) {
+            const datos = iaDatosActuales();
+            const arr = datos[lista];
+            const max = lista === 'conclusionesL' ? MAX_CONCLUSIONES_IA : IA_ESQUEMA[lista].max;
+            if (arr.length >= max) { iaMostrarAviso(`⚠️ Esta sección admite como máximo ${max} filas.`); return; }
+            const nueva = lista === 'conclusionesL' ? '' : iaFilaVacia(lista);
+            if (!iaAplicarCambioSeguro(datos, () => arr.push(nueva), () => arr.pop())) return;
+            renderizarSeccionesReformaIA(datos, db.cursos[db.cursoActivoIndex]);
+        }
+
+        async function iaQuitarFila(lista, idx) {
+            const datos = iaDatosActuales();
+            const arr = datos[lista];
+            if (!arr || idx >= arr.length) return;
+            const fila = arr[idx];
+            const tieneContenido = typeof fila === 'string'
+                ? fila.trim() !== ''
+                : Object.keys(fila).some(k => k !== 'fijo' && String(fila[k] || '').trim() !== '' && !(k === 'c' && fila.fijo));
+            if (tieneContenido || (fila && fila.fijo)) {
+                const nombre = fila && fila.fijo ? `el componente "${fila.c}"` : 'esta fila';
+                if (!(await mostrarModalConfirmacion(`¿Quitar ${nombre} del informe? Se perderá lo escrito en ella.`, 'Quitar'))) return;
+            }
+            arr.splice(idx, 1);
+            salvar();
+            renderizarSeccionesReformaIA(datos, db.cursos[db.cursoActivoIndex]);
+        }
+
+        // Ahora solo guarda 11. Observaciones y el nombre de "Revisado por" (las demás secciones se
+        // guardan celda por celda con iaActualizarCampo). Los campos viejos ya no se escriben aquí.
+        function guardarTextoInformeAsignatura(el) {
+            const datos = iaDatosActuales();
+            const input = el || document.getElementById('ia-observaciones');
+            const campo = input.id === 'ia-firma-revisa' ? 'revisadoPor' : 'observaciones';
+            const anterior = datos[campo] || '';
+            iaAplicarCambioSeguro(datos, () => { datos[campo] = input.value; }, () => { datos[campo] = anterior; input.value = anterior; });
+            if (campo === 'observaciones') iaAutoAlto(input);
         }
 
         function renderizarInformeAsignatura() {
@@ -12416,18 +12734,10 @@ ${estilosHtml}
                 renderizarResultadosNumericosInformeAsignatura(curso, periodo);
             }
 
-            // --- 5. Análisis de destrezas (campos editables persistentes) ---
-            document.getElementById('ia-destrezas-planificadas').value = datosTexto.planificadas || '';
-            document.getElementById('ia-destrezas-desarrolladas').value = datosTexto.desarrolladas || '';
-            actualizarPorcentajeDestrezas();
+            // --- 5 a 11 (reforma 2026-11): tablas editables + observaciones ---
+            renderizarSeccionesReformaIA(datosTexto, curso);
 
-            // --- 5.1, 6, 7, 8: textos editables persistentes ---
-            document.getElementById('ia-factores').value = datosTexto.factores || '';
-            document.getElementById('ia-conclusiones').value = datosTexto.conclusiones || '';
-            document.getElementById('ia-recomendaciones').value = datosTexto.recomendaciones || '';
-            document.getElementById('ia-observaciones').value = datosTexto.observaciones || '';
-
-            // --- 9. Firmas ---
+            // --- 12. Firmas ---
             document.getElementById('ia-firma-elabora').innerText = formatearNombreFirma(db.configGeneral.docente || 'Docente Sin Configurar');
             // Director/a | Coordinador/a - Área | Nivel: siempre editable a mano por quien digita el
             // informe (de Inicial a 3ro BGC) — el admin ya no configura esto de forma centralizada.
@@ -13967,10 +14277,21 @@ ${estilosHtml}
                     XLSX.utils.book_append_sheet(wb, wsExt, `EXTERN_${idx+1}`);
 
                     // Guardado de los Informes de Asignatura (por periodo: t1, t2, t3, anual, anual_supletorio)
-                    let filasInforme = [["Periodo", "Planificadas", "Desarrolladas", "Factores", "Conclusiones", "Recomendaciones", "Observaciones", "RevisadoPor", "AprobadoPor"]];
+                    // Reforma 2026-11: la columna JSON_Formato2 lleva las secciones nuevas (5 a 10) de cada
+                    // periodo; las columnas viejas se mantienen para compatibilidad con respaldos anteriores.
+                    // Excel admite máx. 32.767 caracteres por celda y un informe puede llegar a 45.000, así
+                    // que el JSON se reparte en 3 columnas de hasta 30.000 (se vuelven a unir al importar).
+                    let filasInforme = [["Periodo", "Planificadas", "Desarrolladas", "Factores", "Conclusiones", "Recomendaciones", "Observaciones", "RevisadoPor", "AprobadoPor", ...COLUMNAS_JSON_FORMATO2_IA]];
                     ['t1','t2','t3','anual','anual_supletorio'].forEach(p => {
                         let inf = c.informesAsignatura && c.informesAsignatura[p] ? c.informesAsignatura[p] : {};
-                        filasInforme.push([p, inf.planificadas||"", inf.desarrolladas||"", inf.factores||"", inf.conclusiones||"", inf.recomendaciones||"", inf.observaciones||"", inf.revisadoPor||"", inf.aprobadoPor||""]);
+                        let json2 = '';
+                        if (inf.v === 2) {
+                            const parte2 = { v: 2 };
+                            ['cumplimiento', 'resultados', 'alertas', 'consolidado', 'refuerzoPed', 'nee', 'conclusionesL', 'compromisos'].forEach(k => { if (inf[k] !== undefined) parte2[k] = inf[k]; });
+                            json2 = JSON.stringify(parte2);
+                        }
+                        const trozos = COLUMNAS_JSON_FORMATO2_IA.map((_, i) => json2.slice(i * 30000, (i + 1) * 30000));
+                        filasInforme.push([p, inf.planificadas||"", inf.desarrolladas||"", inf.factores||"", inf.conclusiones||"", inf.recomendaciones||"", inf.observaciones||"", inf.revisadoPor||"", inf.aprobadoPor||"", ...trozos]);
                     });
                     let wsInf = XLSX.utils.aoa_to_sheet(filasInforme);
                     XLSX.utils.book_append_sheet(wb, wsInf, `INFORME_${idx+1}`);
@@ -14261,12 +14582,20 @@ ${estilosHtml}
                             let rowsInf = XLSX.utils.sheet_to_json(sheetInf);
                             rowsInf.forEach(r => {
                                 if(r.Periodo) {
-                                    tempDB.cursos[idx].informesAsignatura[r.Periodo] = {
+                                    const infImportado = {
                                         planificadas: r.Planificadas || '', desarrolladas: r.Desarrolladas || '',
                                         factores: r.Factores || '', conclusiones: r.Conclusiones || '',
                                         recomendaciones: r.Recomendaciones || '', observaciones: r.Observaciones || '',
                                         revisadoPor: r.RevisadoPor || '', aprobadoPor: r.AprobadoPor || ''
                                     };
+                                    // Reforma 2026-11: secciones nuevas (si el respaldo las trae). Un Excel
+                                    // antiguo sin esta columna se migra solo al abrir el informe.
+                                    const json2Importado = COLUMNAS_JSON_FORMATO2_IA.map(col => r[col] || '').join('');
+                                    if (json2Importado) {
+                                        try { Object.assign(infImportado, JSON.parse(json2Importado)); }
+                                        catch (errJson) { console.warn('JSON_Formato2 inválido en', r.Periodo, errJson); }
+                                    }
+                                    tempDB.cursos[idx].informesAsignatura[r.Periodo] = infImportado;
                                 }
                             });
                         }
