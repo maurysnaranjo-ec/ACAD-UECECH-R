@@ -12555,9 +12555,9 @@ ${estilosHtml}
         }
 
         function iaPlaceholderCalificacion(curso) {
-            if (esCursoDeAmbitosCualitativo(curso)) return 'Ej.: EP';   // Inicial y Preparatoria
-            if (esCursoCualitativoElemental(curso)) return 'Ej.: C+';   // 2do a 4to EGB
-            return 'Ej.: 6,40';                                          // 5to EGB a 3ro BGC
+            // Inicial a 4to EGB: escala cualitativa A+ a E-; 5to EGB a 3ro BGC: numérica.
+            if (esCursoDeAmbitosCualitativo(curso) || esCursoCualitativoElemental(curso)) return 'Ej.: C+';
+            return 'Ej.: 6,40';
         }
 
         function iaCeldaEditable(lista, idx, col, valor, placeholder) {
@@ -12726,13 +12726,13 @@ ${estilosHtml}
             document.getElementById('ia-paralelo-est').innerText = `${curso.paralelo || '-'} / ${curso.estudiantes.length} est.`;
 
             // --- 2, 3 y 4: Resultados de Aprendizaje / Dificultades / NEE ---
-            document.getElementById('ia-resultados-numerico').classList.toggle('hidden', esAmbitos);
-            document.getElementById('ia-resultados-ambitos').classList.toggle('hidden', !esAmbitos);
-            if (esAmbitos) {
-                renderizarResultadosAmbitosInformeAsignatura(curso, periodo);
-            } else {
-                renderizarResultadosNumericosInformeAsignatura(curso, periodo);
-            }
+            // 2026-11: Inicial y Preparatoria (Ámbitos) usan EXACTAMENTE el mismo formato cualitativo
+            // de 2do-4to EGB (escala A+ a E-, 3 niveles, promedio del curso en letra, análisis vs. la
+            // media). La vista anterior "por Ámbito" (renderizarResultadosAmbitosInformeAsignatura) ya
+            // no se usa en el informe.
+            document.getElementById('ia-resultados-numerico').classList.remove('hidden');
+            document.getElementById('ia-resultados-ambitos').classList.add('hidden');
+            renderizarResultadosNumericosInformeAsignatura(curso, periodo);
 
             // --- 5 a 11 (reforma 2026-11): tablas editables + observaciones ---
             renderizarSeccionesReformaIA(datosTexto, curso);
@@ -12756,16 +12756,26 @@ ${estilosHtml}
             let contadores = { DA: 0, A: 0, PA: 0, NA: 0, ALC: 0, PRO: 0, INI: 0 };
             // 2do-4to EGB (2026-10-11): escala CUALITATIVA — 3 niveles (A+ a B- / C+ a C- / D+ a E-), promedio
             // del curso como letra y "Resultados Globales" comparados contra la media en letras.
-            const esCualIA = esCursoCualitativoElemental(curso);
+            // 2026-11: Inicial y Preparatoria (Ámbitos) también usan este formato cualitativo, igual que
+            // 2do-4to EGB. Su "nota" por estudiante es el resumen cualitativo del periodo (promedio de sus
+            // Ámbitos/ítems, convertido a la letra más cercana) expresado en su equivalente 1-10. No tienen
+            // supletorio ni pérdida de año, así que nunca entran al aviso de no promovidos.
+            const esAmbitosIA = esCursoDeAmbitosCualitativo(curso);
+            const esCualIA = esCursoCualitativoElemental(curso) || esAmbitosIA;
             const fmtNp = (v) => esCualIA ? numeroALetraCualitativa(v) : parseFloat(v).toFixed(2);
             let sumaNotas = 0, totalConNota = 0;
             let notasValidas = []; // [{nombre, nota}], para el análisis de promedios (vs. la media del curso)
             let listaDificultades = [];
             let listaNEE = [];
             let listaNoPromovidos = []; // promedio anual < 4 en esta asignatura: pierde el año, sin derecho a supletorio
+            const notaAmbitosIA = (estId) => {
+                const cod = calcularResumenCualitativoEstudiante(curso, estId, periodo === 'anual_supletorio' ? 'anual' : periodo);
+                const item = ESCALA_DESTREZAS_CUALITATIVA.find(e => e.val === cod);
+                return (item && item.valor !== null) ? item.valor : '';
+            };
 
             curso.estudiantes.sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(est => {
-                const nota = obtenerNotaPorPeriodo(curso, est.id, periodo);
+                const nota = esAmbitosIA ? notaAmbitosIA(est.id) : obtenerNotaPorPeriodo(curso, est.id, periodo);
                 if(est.nee && est.nee !== 'Ninguna') listaNEE.push({ nombre: est.nombre, nota: nota });
                 if(nota === '' || nota === undefined) return;
                 const n = parseFloat(nota);
@@ -12774,12 +12784,15 @@ ${estilosHtml}
                 notasValidas.push({ nombre: est.nombre, nota: n });
                 const eq = obtenerEquivalenciaRGLOEI(n);
                 if(contadores[eq.sigla] !== undefined) contadores[eq.sigla]++;
-                if(esCualIA) { const r = Math.round(n); if(r >= 7) contadores.ALC++; else if(r >= 5) contadores.PRO++; else contadores.INI++; }
-                if(n < 7.00) listaDificultades.push({ nombre: est.nombre, nota: n });
-                if(periodo === 'anual' && n < 4.00) {
+                // Corte de "alcanzado": 2do-4to EGB desde B- (7); Inicial/Preparatoria desde B+ (8), porque
+                // en su escala de Ámbitos B- es "en proceso" (ver ESCALA_DESTREZAS_CUALITATIVA).
+                const corteAlcanzadoIA = esAmbitosIA ? 8 : 7;
+                if(esCualIA) { const r = Math.round(n); if(r >= corteAlcanzadoIA) contadores.ALC++; else if(r >= 5) contadores.PRO++; else contadores.INI++; }
+                if(esAmbitosIA ? Math.round(n) < corteAlcanzadoIA : n < 7.00) listaDificultades.push({ nombre: est.nombre, nota: n });
+                if(!esAmbitosIA && periodo === 'anual' && n < 4.00) {
                     listaNoPromovidos.push({ nombre: est.nombre, nota: fmtNp(n), motivo: 'anual' });
                 }
-                if(periodo === 'anual_supletorio') {
+                if(!esAmbitosIA && periodo === 'anual_supletorio') {
                     // "n" (de obtenerNotaPorPeriodo) ya resuelve el caso "anual < 4" y el caso
                     // "aprobó el supletorio" a un mismo número; para distinguir el caso "reprobó el
                     // examen supletorio (nota < 7)" hay que recalcular el promedio anual puro y mirar
@@ -12810,7 +12823,12 @@ ${estilosHtml}
             if(elRango) {
                 if(totalConNota > 0) {
                     if (esCualIA) {
-                        elRango.innerText = nivelDestrezaCualitativa(promCurso).largo;
+                        if (esAmbitosIA) {
+                            const itemProm = ESCALA_DESTREZAS_CUALITATIVA.find(e => e.val === obtenerCodigoDestrezaMasCercano(promCurso));
+                            elRango.innerText = itemProm ? itemProm.grupo : '-';
+                        } else {
+                            elRango.innerText = nivelDestrezaCualitativa(promCurso).largo;
+                        }
                     } else {
                         const eqCurso = obtenerEquivalenciaRGLOEI(promCurso);
                         elRango.innerText = `${eqCurso.desc} (${eqCurso.sigla})`;
@@ -12835,8 +12853,8 @@ ${estilosHtml}
             const filaNA = document.getElementById('ia-fila-na');
             if (esCualIA) {
                 setTxt('ia-escala-titulo', 'Escala Cualitativa');
-                setTxt('ia-lbl-da', 'Destreza o aprendizaje alcanzado (A+ a B-)');
-                setTxt('ia-lbl-a', 'Destreza o aprendizaje en proceso de desarrollo (C+ a C-)');
+                setTxt('ia-lbl-da', esAmbitosIA ? 'Destreza o aprendizaje alcanzado (A+ a B+)' : 'Destreza o aprendizaje alcanzado (A+ a B-)');
+                setTxt('ia-lbl-a', esAmbitosIA ? 'Destreza o aprendizaje en proceso de desarrollo (B- a C-)' : 'Destreza o aprendizaje en proceso de desarrollo (C+ a C-)');
                 setTxt('ia-lbl-pa', 'Destreza o aprendizaje iniciado (D+ a E-)');
                 if (filaNA) filaNA.classList.add('hidden');
                 setTxt('ia-n-da', contadores.ALC); setTxt('ia-p-da', pct(contadores.ALC));
@@ -12865,8 +12883,8 @@ ${estilosHtml}
             document.getElementById('ia-n-inferior').innerText = nInferior;
             document.getElementById('ia-p-inferior').innerText = pct(nInferior);
 
-            document.getElementById('ia-titulo-dificultades').innerText = esCursoCualitativoElemental(curso)
-                ? '3. Análisis de Dificultades de Aprendizaje (calificación de C+ a E-)'
+            document.getElementById('ia-titulo-dificultades').innerText = esCualIA
+                ? (esAmbitosIA ? '3. Análisis de Dificultades de Aprendizaje (calificación de B- a E-)' : '3. Análisis de Dificultades de Aprendizaje (calificación de C+ a E-)')
                 : '3. Análisis de Dificultades de Aprendizaje (Nota < 7)';
             const tbodyDif = document.getElementById('ia-tabla-dificultades');
             tbodyDif.innerHTML = '';
@@ -12874,7 +12892,7 @@ ${estilosHtml}
                 tbodyDif.innerHTML = `<tr><td colspan="3" class="p-2 text-slate-400 italic">Sin estudiantes en esta condición.</td></tr>`;
             } else {
                 listaDificultades.forEach((item, idx) => {
-                    tbodyDif.innerHTML += `<tr class="divide-x divide-slate-300"><td class="p-1 font-bold text-slate-400 w-8">${idx+1}</td><td class="p-1 text-left">${item.nombre}</td><td class="p-1 font-bold text-red-700">${esCursoCualitativoElemental(curso) ? numeroALetraCualitativa(item.nota) : item.nota.toFixed(2)}</td></tr>`;
+                    tbodyDif.innerHTML += `<tr class="divide-x divide-slate-300"><td class="p-1 font-bold text-slate-400 w-8">${idx+1}</td><td class="p-1 text-left">${item.nombre}</td><td class="p-1 font-bold text-red-700">${esCualIA ? numeroALetraCualitativa(item.nota) : item.nota.toFixed(2)}</td></tr>`;
                 });
             }
 
