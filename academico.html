@@ -9561,6 +9561,15 @@ ${estilosHtml}
         function esCursoDeAmbitosCualitativo(curso) {
             return !!(curso && esMateriaCualitativaPorNombre(curso.asignatura));
         }
+        // Informe de Asignatura (2026-11): Inicial 3/4 años y 1ro EGB (Preparatoria) SIEMPRE se informan
+        // con su escala cualitativa, sin importar el nombre de la asignatura del curso (se detecta por el
+        // GRADO, no solo por el nombre "Ámbitos..."/"(Preparatoria)").
+        function esCursoInicialOPreparatoria(curso) {
+            if (!curso) return false;
+            if (esCursoDeAmbitosCualitativo(curso)) return true;
+            const nivel = obtenerNivelAcademico(curso.label);
+            return !!(nivel && (nivel.clave === 'inicial' || nivel.clave === 'preparatoria'));
+        }
         // Determina si la materia de ESTE curso puntual es el slot de "Ámbitos" propiamente dicho (lo
         // digita el/la docente de acompañamiento/tutor de aula) — a diferencia de Inglés/ECA/Educación
         // Física de Preparatoria, que son asignaturas complementarias de un/a especialista.
@@ -12556,7 +12565,7 @@ ${estilosHtml}
 
         function iaPlaceholderCalificacion(curso) {
             // Inicial a 4to EGB: escala cualitativa A+ a E-; 5to EGB a 3ro BGC: numérica.
-            if (esCursoDeAmbitosCualitativo(curso) || esCursoCualitativoElemental(curso)) return 'Ej.: C+';
+            if (esCursoInicialOPreparatoria(curso) || esCursoCualitativoElemental(curso)) return 'Ej.: C+';
             return 'Ej.: 6,40';
         }
 
@@ -12700,7 +12709,7 @@ ${estilosHtml}
 
             // Ámbitos (Inicial/Preparatoria) no tienen examen supletorio: se oculta esa opción del
             // selector, y si quedó elegida de un curso anterior, se cae de vuelta a "Anual".
-            const esAmbitos = esCursoDeAmbitosCualitativo(curso);
+            const esAmbitos = esCursoInicialOPreparatoria(curso);
             const optSupletorio = document.getElementById('opt-informe-asig-supletorio');
             if(optSupletorio) optSupletorio.classList.toggle('hidden', esAmbitos);
             if(esAmbitos && selPeriodo.value === 'anual_supletorio') selPeriodo.value = 'anual';
@@ -12760,7 +12769,7 @@ ${estilosHtml}
             // 2do-4to EGB. Su "nota" por estudiante es el resumen cualitativo del periodo (promedio de sus
             // Ámbitos/ítems, convertido a la letra más cercana) expresado en su equivalente 1-10. No tienen
             // supletorio ni pérdida de año, así que nunca entran al aviso de no promovidos.
-            const esAmbitosIA = esCursoDeAmbitosCualitativo(curso);
+            const esAmbitosIA = esCursoInicialOPreparatoria(curso);
             const esCualIA = esCursoCualitativoElemental(curso) || esAmbitosIA;
             const fmtNp = (v) => esCualIA ? numeroALetraCualitativa(v) : parseFloat(v).toFixed(2);
             let sumaNotas = 0, totalConNota = 0;
@@ -12769,9 +12778,28 @@ ${estilosHtml}
             let listaNEE = [];
             let listaNoPromovidos = []; // promedio anual < 4 en esta asignatura: pierde el año, sin derecho a supletorio
             const notaAmbitosIA = (estId) => {
-                const cod = calcularResumenCualitativoEstudiante(curso, estId, periodo === 'anual_supletorio' ? 'anual' : periodo);
-                const item = ESCALA_DESTREZAS_CUALITATIVA.find(e => e.val === cod);
-                return (item && item.valor !== null) ? item.valor : '';
+                const per = periodo === 'anual_supletorio' ? 'anual' : periodo;
+                // 1) Calificación cualitativa por Ámbitos/ítems (A+ a E-), la normal de este subnivel.
+                if (curso.calificacionesAmbitos && curso.calificacionesAmbitos[estId]) {
+                    // Si el curso es de Inicial/Preparatoria pero su asignatura no se llama "Ámbitos...",
+                    // se leen igual los Ámbitos del grado (copia temporal, el curso real no se toca).
+                    let cursoLectura = curso;
+                    if (!esCursoDeAmbitosCualitativo(curso)) {
+                        const nivelIA = obtenerNivelAcademico(curso.label);
+                        const nombreAmbitos = nivelIA && (nivelIA.materias || []).find(m => String(m).indexOf('Ámbitos') === 0);
+                        if (nombreAmbitos) cursoLectura = Object.assign({}, curso, { asignatura: nombreAmbitos });
+                    }
+                    const cod = calcularResumenCualitativoEstudiante(cursoLectura, estId, per);
+                    const item = ESCALA_DESTREZAS_CUALITATIVA.find(e => e.val === cod);
+                    if (item && item.valor !== null) return item.valor;
+                }
+                // 2) Respaldo: si este curso guarda sus notas en el cuadro normal (letras o números),
+                //    se toman de ahí y se muestran igualmente como letra.
+                if (curso.calificaciones && curso.calificaciones[estId]) {
+                    const nota = obtenerNotaPorPeriodo(curso, estId, per);
+                    if (nota !== '' && nota !== undefined && !isNaN(parseFloat(nota))) return parseFloat(nota);
+                }
+                return '';
             };
 
             curso.estudiantes.sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(est => {
@@ -12788,7 +12816,8 @@ ${estilosHtml}
                 // en su escala de Ámbitos B- es "en proceso" (ver ESCALA_DESTREZAS_CUALITATIVA).
                 const corteAlcanzadoIA = esAmbitosIA ? 8 : 7;
                 if(esCualIA) { const r = Math.round(n); if(r >= corteAlcanzadoIA) contadores.ALC++; else if(r >= 5) contadores.PRO++; else contadores.INI++; }
-                if(esAmbitosIA ? Math.round(n) < corteAlcanzadoIA : n < 7.00) listaDificultades.push({ nombre: est.nombre, nota: n });
+                // Dificultades: Inicial/Preparatoria solo "iniciado" (D+ a E-, es decir < 5); el resto, nota < 7.
+                if(esAmbitosIA ? Math.round(n) < 5 : n < 7.00) listaDificultades.push({ nombre: est.nombre, nota: n });
                 if(!esAmbitosIA && periodo === 'anual' && n < 4.00) {
                     listaNoPromovidos.push({ nombre: est.nombre, nota: fmtNp(n), motivo: 'anual' });
                 }
@@ -12884,7 +12913,7 @@ ${estilosHtml}
             document.getElementById('ia-p-inferior').innerText = pct(nInferior);
 
             document.getElementById('ia-titulo-dificultades').innerText = esCualIA
-                ? (esAmbitosIA ? '3. Análisis de Dificultades de Aprendizaje (calificación de B- a E-)' : '3. Análisis de Dificultades de Aprendizaje (calificación de C+ a E-)')
+                ? (esAmbitosIA ? '3. Análisis de Dificultades de Aprendizaje (calificación de D+ a E-)' : '3. Análisis de Dificultades de Aprendizaje (calificación de C+ a E-)')
                 : '3. Análisis de Dificultades de Aprendizaje (Nota < 7)';
             const tbodyDif = document.getElementById('ia-tabla-dificultades');
             tbodyDif.innerHTML = '';
