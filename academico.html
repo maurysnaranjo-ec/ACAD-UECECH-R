@@ -7760,6 +7760,44 @@ ${estilosHtml}
             }
         }
 
+        // Cuadro de Digitación: TAB baja al siguiente estudiante en la misma columna (Mayús+TAB sube). Al
+        // terminar una columna continúa en la siguiente columna editable (al volver, en la anterior). Al
+        // llegar a la última celda, TAB sale del cuadro con normalidad. Vale para los cuadros numérico,
+        // cualitativo, de Ámbitos y OVP de los 3 trimestres.
+        document.addEventListener('keydown', function (evento) {
+            if (evento.key !== 'Tab' || evento.ctrlKey || evento.altKey || evento.metaKey) return;
+            const campo = evento.target;
+            if (!campo || !campo.matches || !campo.matches('input, select')) return;
+            const tbody = campo.closest('tbody[id^="tabla-t"]');
+            const celda = campo.closest('td');
+            if (!tbody || !celda) return;
+            const paso = evento.shiftKey ? -1 : 1;
+            const editableEn = (fila, col) => {
+                const td = tbody.rows[fila] && tbody.rows[fila].cells[col];
+                const control = td && td.querySelector('input, select');
+                return (control && !control.disabled) ? control : null;
+            };
+            const totalFilas = tbody.rows.length;
+            const totalColumnas = tbody.rows[0] ? tbody.rows[0].cells.length : 0;
+            let fila = celda.parentElement.sectionRowIndex + paso;
+            let columna = celda.cellIndex;
+            let destino = null;
+            while (columna >= 0 && columna < totalColumnas) {
+                while (fila >= 0 && fila < totalFilas) {
+                    destino = editableEn(fila, columna);
+                    if (destino) break;
+                    fila += paso;
+                }
+                if (destino) break;
+                columna += paso;
+                fila = paso > 0 ? 0 : totalFilas - 1;
+            }
+            if (!destino) return; // primera o última celda del cuadro: TAB sale del cuadro
+            evento.preventDefault();
+            destino.focus();
+            if (destino.tagName === 'INPUT') destino.select();
+        });
+
         function inicializarEstructurasTrimestralesHTML() {
             const contenedor = document.getElementById('contenedor-trimestres');
             if(!contenedor) return;
@@ -7772,6 +7810,13 @@ ${estilosHtml}
                             <h2 class="text-lg font-bold text-emerald-900">${t}º TRIMESTRE - Cuadro de Digitación (<span class="label-curso-contexto">-</span>)</h2>
                         </div>
                         <div class="flex flex-wrap items-center gap-2 no-print">
+                            <div id="calif-import-tools-t${t}" class="flex flex-wrap items-center gap-2">
+                                <button onclick="descargarPlantillaCalificaciones(${t})" class="bg-teal-700 hover:bg-teal-800 text-white font-bold px-3 py-1.5 rounded text-xs shadow" title="Descarga una plantilla Excel con los estudiantes y las calificaciones actuales de este trimestre">📥 Plantilla Calificaciones</button>
+                                <label class="bg-teal-600 hover:bg-teal-700 text-white font-bold px-3 py-1.5 rounded text-xs shadow cursor-pointer">
+                                    📤 Importar Calificaciones
+                                    <input type="file" accept=".xlsx" class="hidden" onchange="importarCalificacionesDesdeExcel(event, ${t})">
+                                </label>
+                            </div>
                             <div id="proyecto-import-tools-t${t}" class="flex flex-wrap items-center gap-2">
                                 <button onclick="descargarPlantillaProyecto(${t})" class="bg-indigo-700 hover:bg-indigo-800 text-white font-bold px-3 py-1.5 rounded text-xs shadow" title="Descarga Cédula/Estudiante/Proyecto de este trimestre para llenar fuera del sistema">📥 Plantilla Proyecto</button>
                                 <label class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded text-xs shadow cursor-pointer">
@@ -9949,6 +9994,8 @@ ${estilosHtml}
 
             const herramientasProyecto = document.getElementById(`proyecto-import-tools-t${t}`);
             if(herramientasProyecto) herramientasProyecto.classList.toggle('hidden', esCursoDeOVP(curso) || esCursoDeAmbitosCualitativo(curso));
+            const herramientasCalificaciones = document.getElementById(`calif-import-tools-t${t}`);
+            if(herramientasCalificaciones) herramientasCalificaciones.classList.toggle('hidden', esCursoDeOVP(curso) || esAdminActual());
 
             const firmaDocenteEl = document.getElementById(`firma-docente-t${t}`);
             if(firmaDocenteEl) firmaDocenteEl.innerText = formatearNombreFirma(db.configGeneral.docente || 'Docente Sin Configurar');
@@ -10629,6 +10676,225 @@ ${estilosHtml}
             };
             reader.readAsArrayBuffer(file);
             event.target.value = '';
+        }
+
+        // ═══════════════ PLANTILLA E IMPORTACIÓN DE CALIFICACIONES POR TRIMESTRE (2026-11) ═══════════════
+        // Sigue el mismo modo que el Cuadro de Digitación del curso:
+        //  · 'numeros' (5to EGB a 3ro BGC): I1 a I10, EVAL y PROY./10, de 0 a 10.
+        //  · 'letras' (2do a 4to EGB): los mismos campos, con letras A+ a E-.
+        //  · 'ambitos' (Inicial y Preparatoria): una columna por Ámbito (A+ a E- o N/E), más Comportamiento
+        //    (A a E) si el curso lo digita. Ese cuadro no tiene insumos, evaluación ni proyecto.
+        // Una celda vacía en el archivo NO borra nada: solo se escribe lo que el archivo trae, y las columnas
+        // calculadas (P.Ins, Ev/Ref, Proy/RefP, Final, Cual.) las sigue sacando calcularTrimestre().
+        function definicionImportacionCalificaciones(curso) {
+            if (esCursoDeAmbitosCualitativo(curso)) {
+                const cols = obtenerItemsCualitativosDelCurso(curso).map(item => ({
+                    titulo: item.label, alias: [item.label], tipo: 'letraNE',
+                    leer: (reg) => reg[item.key], escribir: (reg, v) => { reg[item.key] = v; }
+                }));
+                if (esSlotDeAmbitos(curso) && curso.esAcompanamiento) cols.push({
+                    titulo: 'Comportamiento', alias: ['Comportamiento'], tipo: 'comportamiento',
+                    leer: (reg) => reg.comportamiento, escribir: (reg, v) => { reg.comportamiento = v; }
+                });
+                return { modo: 'ambitos', cols };
+            }
+            const modo = esCursoCualitativoElemental(curso) ? 'letras' : 'numeros';
+            const cols = [];
+            for (let i = 0; i < 10; i++) cols.push({
+                titulo: `I${i + 1}`, alias: [`I${i + 1}`], tipo: modo === 'letras' ? 'letra' : 'numero',
+                leer: (reg) => reg.insumos[i], escribir: (reg, v) => { reg.insumos[i] = v; }
+            });
+            cols.push({
+                titulo: 'EVAL', alias: ['EVAL', 'EVALUACION'], tipo: modo === 'letras' ? 'letra' : 'numero',
+                leer: (reg) => reg.sumativa, escribir: (reg, v) => { reg.sumativa = v; }
+            });
+            cols.push({
+                titulo: modo === 'letras' ? 'PROY.' : 'PROY./10', alias: ['PROY', 'PROY10', 'PROYECTO'], tipo: modo === 'letras' ? 'letra' : 'numero',
+                leer: (reg) => reg.proyecto, escribir: (reg, v) => { reg.proyecto = v; }
+            });
+            return { modo, cols };
+        }
+
+        // Registro donde vive la nota de este estudiante en este trimestre (lo crea si hace falta).
+        function registroImportacionCalificaciones(curso, modo, estId, tKey) {
+            if (modo === 'ambitos') {
+                if (!curso.calificacionesAmbitos) curso.calificacionesAmbitos = {};
+                if (!curso.calificacionesAmbitos[estId]) curso.calificacionesAmbitos[estId] = { t1: {}, t2: {}, t3: {} };
+                if (!curso.calificacionesAmbitos[estId][tKey]) curso.calificacionesAmbitos[estId][tKey] = {};
+                return curso.calificacionesAmbitos[estId][tKey];
+            }
+            if (!curso.calificaciones[estId]) curso.calificaciones[estId] = {};
+            if (!curso.calificaciones[estId][tKey]) curso.calificaciones[estId][tKey] = { insumos: Array(10).fill(''), sumativa: '', refuerzo: '', proyecto: '', refuerzoProyecto: '' };
+            if (!Array.isArray(curso.calificaciones[estId][tKey].insumos)) curso.calificaciones[estId][tKey].insumos = Array(10).fill('');
+            return curso.calificaciones[estId][tKey];
+        }
+
+        // Devuelve { valor } si la celda es válida para ese tipo de columna, o { error } si no lo es.
+        function interpretarCeldaCalificacion(valorCelda, tipo) {
+            const texto = String(valorCelda).trim();
+            if (tipo === 'numero') {
+                const normal = texto.replace(',', '.');
+                const n = /^\d+(\.\d+)?$/.test(normal) ? parseFloat(normal) : NaN;
+                if (isNaN(n) || n > 10) return { error: 'debe ser un número de 0 a 10' };
+                return { valor: Math.round(n * 100) / 100 };
+            }
+            const letra = texto.toUpperCase().replace(/[−–—]/g, '-').replace(/\s+/g, '');
+            if (tipo === 'comportamiento') {
+                return ESCALA_COMPORTAMIENTO_CUALITATIVA.some(e => e.val === letra) ? { valor: letra } : { error: 'debe ser una letra de A a E' };
+            }
+            if (tipo === 'letraNE' && (letra === 'N/E' || letra === 'NE')) return { valor: 'N/E' };
+            if (esNotaLetraCualitativa(letra)) return { valor: letra };
+            // También se acepta el equivalente numérico entero de la escala (10 = A+ ... 1 = E-).
+            if (/^(10|[1-9])$/.test(letra)) return { valor: obtenerEscalaAlfabetica(parseInt(letra, 10)) };
+            return { error: tipo === 'letraNE' ? 'debe ser una letra de A+ a E- o N/E' : 'debe ser una letra de A+ a E-' };
+        }
+
+        async function descargarPlantillaCalificaciones(t) {
+            const curso = db.cursos[db.cursoActivoIndex];
+            if (esCursoDeOVP(curso)) { alert('OVP se califica con su propia Matriz de Evaluación; no usa esta plantilla.'); return; }
+            if (!curso.estudiantes || !curso.estudiantes.length) { alert('Este curso todavía no tiene estudiantes en la nómina.'); return; }
+            const tKey = `t${t}`;
+            const def = definicionImportacionCalificaciones(curso);
+            const filas = [['Cédula', 'Estudiante', ...def.cols.map(c => c.titulo), 'ID_Interno']];
+            curso.estudiantes.sort((a, b) => a.nombre.localeCompare(b.nombre)).forEach(est => {
+                const reg = registroImportacionCalificaciones(curso, def.modo, est.id, tKey);
+                filas.push([est.cedula, est.nombre, ...def.cols.map(c => { const v = c.leer(reg); return (v === undefined || v === null) ? '' : v; }), est.id]);
+            });
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(filas);
+            // La cédula va como texto para que Excel no le quite el cero inicial; ID_Interno queda oculta.
+            for (let r = 2; r <= filas.length; r++) { const celda = ws['A' + r]; if (celda) { celda.t = 's'; celda.v = String(celda.v); celda.z = '@'; } }
+            ws['!cols'] = [{ wch: 14 }, { wch: 38 }, ...def.cols.map(c => ({ wch: def.modo === 'ambitos' ? 22 : 8 })), { hidden: true }];
+            XLSX.utils.book_append_sheet(wb, ws, `Trimestre_${t}`);
+            const escala = {
+                numeros: 'Escriba notas de 0 a 10 (se aceptan decimales con punto o coma).',
+                letras: 'Escriba letras de A+ a E- (A+, A-, B+, B-, C+, C-, D+, D-, E+, E-).',
+                ambitos: 'Escriba letras de A+ a E- o N/E (no evaluado).' + (def.cols.some(c => c.tipo === 'comportamiento') ? ' En Comportamiento, una letra de A a E.' : '')
+            }[def.modo];
+            const instrucciones = [
+                [`Plantilla de calificaciones: ${curso.label || ''} ${curso.paralelo || ''} - ${curso.asignatura || ''} - ${t}º Trimestre`],
+                [escala],
+                ['Llene solo las celdas que tenga: no hace falta completar todos los insumos.'],
+                ['Una celda vacía no borra la nota que ya esté en el sistema. Para borrar una nota, hágalo en el Cuadro de Digitación.'],
+                ['No cambie los títulos de las columnas, ni la cédula o el nombre del estudiante.'],
+                ['Los promedios y la nota final los calcula el sistema al importar.']
+            ];
+            const wsAyuda = XLSX.utils.aoa_to_sheet(instrucciones);
+            wsAyuda['!cols'] = [{ wch: 100 }];
+            XLSX.utils.book_append_sheet(wb, wsAyuda, 'Instrucciones');
+            const labelCurso = (curso.label && curso.paralelo) ? `${curso.label}_${curso.paralelo}` : 'Curso';
+            await guardarArchivoExcel(wb, `Plantilla_Calificaciones_${labelCurso}_Trimestre_${t}.xlsx`.replace(/\s+/g, '_'));
+        }
+
+        function renderizarResultadoImportacionCalificaciones(t, resumen, avisos) {
+            const cont = document.getElementById(`proyecto-import-diagnostico-t${t}`);
+            if (!cont) return;
+            cont.innerHTML = `
+            <div class="border ${avisos.length ? 'border-amber-400' : 'border-emerald-400'} rounded-lg overflow-hidden">
+                <div class="${avisos.length ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-900'} text-xs font-bold px-3 py-2 flex justify-between items-center gap-2">
+                    <span>${escaparHtml(resumen)}</span>
+                    <button onclick="document.getElementById('proyecto-import-diagnostico-t${t}').innerHTML=''" class="text-[10px] font-normal underline">Cerrar</button>
+                </div>
+                ${avisos.length ? `<ul class="max-h-56 overflow-y-auto text-[11px] text-slate-700 px-4 py-2 list-disc">${avisos.map(a => `<li>${escaparHtml(a)}</li>`).join('')}</ul>` : ''}
+            </div>`;
+            cont.scrollIntoView({ block: 'nearest' });
+        }
+
+        function importarCalificacionesDesdeExcel(event, t) {
+            const file = event.target.files[0];
+            event.target.value = ''; // permite volver a elegir el mismo archivo después de corregirlo
+            if (!file) return;
+            if (esAdminActual()) { alert('El administrador puede ver las calificaciones, pero no editarlas.'); return; }
+            const curso = db.cursos[db.cursoActivoIndex];
+            if (esCursoDeOVP(curso)) { alert('OVP se califica con su propia Matriz de Evaluación; no usa esta plantilla.'); return; }
+            const tKey = `t${t}`;
+            const def = definicionImportacionCalificaciones(curso);
+            const normalizarTitulo = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const normalizarNombre = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+            const normalizarCedula = (v) => String(v ?? '').trim().replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+
+            const reader = new FileReader();
+            reader.onload = async function (e) {
+                try {
+                    const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                    const filasCrudas = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: '' });
+                    if (!filasCrudas.length) { renderizarResultadoImportacionCalificaciones(t, '⚠️ El archivo está vacío: no se importó nada.', []); return; }
+
+                    // Ubica cada columna del archivo por su título, sin depender del orden.
+                    const titulosArchivo = Object.keys(filasCrudas[0]);
+                    const tituloPorNormalizado = {};
+                    titulosArchivo.forEach(k => { tituloPorNormalizado[normalizarTitulo(k)] = k; });
+                    const columnas = def.cols
+                        .map(col => ({ col, tituloArchivo: col.alias.map(a => tituloPorNormalizado[normalizarTitulo(a)]).find(Boolean) }))
+                        .filter(x => x.tituloArchivo !== undefined);
+                    if (!columnas.length) {
+                        renderizarResultadoImportacionCalificaciones(t, '⚠️ No se importó nada: el archivo no tiene las columnas de calificaciones de este curso. Descargue la plantilla de este trimestre.', []);
+                        return;
+                    }
+                    const tituloId = tituloPorNormalizado[normalizarTitulo('ID_Interno')];
+                    const tituloCedula = tituloPorNormalizado[normalizarTitulo('Cédula')];
+                    const tituloNombre = tituloPorNormalizado[normalizarTitulo('Estudiante')];
+
+                    const cambios = [];   // se aplican todos juntos, después de revisar el archivo completo
+                    const avisos = [];
+                    const vistos = new Set();
+                    let reemplazos = 0, estudiantesConCambios = 0, filasDatos = 0;
+                    filasCrudas.forEach((fila, i) => {
+                        const nFila = i + 2;
+                        const nombreArchivo = tituloNombre ? String(fila[tituloNombre] ?? '').trim() : '';
+                        const cedulaArchivo = tituloCedula ? fila[tituloCedula] : '';
+                        const idArchivo = tituloId ? String(fila[tituloId] ?? '').trim() : '';
+                        const celdas = columnas.filter(x => String(fila[x.tituloArchivo] ?? '').trim() !== '');
+                        if (!nombreArchivo && !String(cedulaArchivo ?? '').trim() && !idArchivo && !celdas.length) return; // fila en blanco
+                        filasDatos++;
+
+                        // Mismo orden que el resto de importaciones: ID interno, cédula y nombre inequívoco.
+                        let est = idArchivo ? curso.estudiantes.find(x => x.id === idArchivo) : null;
+                        if (!est) {
+                            const ced = normalizarCedula(cedulaArchivo);
+                            if (ced) est = curso.estudiantes.find(x => normalizarCedula(x.cedula) === ced);
+                        }
+                        if (!est && nombreArchivo) {
+                            const candidatos = curso.estudiantes.filter(x => normalizarNombre(x.nombre) === normalizarNombre(nombreArchivo));
+                            if (candidatos.length === 1) est = candidatos[0];
+                        }
+                        if (!est) { avisos.push(`Fila ${nFila} (${nombreArchivo || 'sin nombre'}): no coincide con ningún estudiante de este curso; se omitió.`); return; }
+                        if (vistos.has(est.id)) { avisos.push(`Fila ${nFila} (${est.nombre}): el estudiante está repetido en el archivo; se omitió esta fila.`); return; }
+                        vistos.add(est.id);
+
+                        const reg = registroImportacionCalificaciones(curso, def.modo, est.id, tKey);
+                        let cambioEnFila = false;
+                        celdas.forEach(({ col, tituloArchivo }) => {
+                            const r = interpretarCeldaCalificacion(fila[tituloArchivo], col.tipo);
+                            if (r.error) { avisos.push(`Fila ${nFila} (${est.nombre}), ${col.titulo}: "${fila[tituloArchivo]}" no es válido, ${r.error}. Se dejó la nota anterior.`); return; }
+                            const actual = col.leer(reg);
+                            const tieneActual = actual !== '' && actual !== undefined && actual !== null;
+                            if (tieneActual && String(actual) === String(r.valor)) return; // sin cambio
+                            if (tieneActual) reemplazos++;
+                            cambios.push(() => col.escribir(reg, r.valor));
+                            cambioEnFila = true;
+                        });
+                        if (cambioEnFila) estudiantesConCambios++;
+                    });
+
+                    if (!cambios.length) {
+                        renderizarResultadoImportacionCalificaciones(t, `ℹ️ No hubo calificaciones nuevas que importar (${filasDatos} fila(s) revisadas).`, avisos);
+                        return;
+                    }
+                    if (reemplazos > 0) {
+                        const seguir = await mostrarModalConfirmacion(`El archivo reemplazará ${reemplazos} calificación(es) que ya estaban registradas en el ${t}º Trimestre con un valor distinto.\n\n¿Continuar con la importación?`, 'Importar');
+                        if (!seguir) { renderizarResultadoImportacionCalificaciones(t, 'Importación cancelada: no se cambió ninguna calificación.', []); return; }
+                    }
+                    cambios.forEach(aplicar => aplicar());
+                    salvar();
+                    renderizarTablaTrimestre(t);
+                    renderizarResultadoImportacionCalificaciones(t, `✅ ${cambios.length} calificación(es) importada(s) para ${estudiantesConCambios} estudiante(s).${avisos.length ? ` ${avisos.length} aviso(s):` : ''}`, avisos);
+                } catch (err) {
+                    console.error('Error al importar calificaciones:', err);
+                    renderizarResultadoImportacionCalificaciones(t, '⚠️ No se pudo leer el archivo: no se cambió ninguna calificación. Use la plantilla descargada desde este trimestre.', []);
+                }
+            };
+            reader.readAsArrayBuffer(file);
         }
 
         // Lee el Excel de notas (generado con descargarPlantillaNotasExternas o editado a partir de él)
