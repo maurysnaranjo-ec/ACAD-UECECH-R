@@ -696,6 +696,28 @@
                         <button id="btn-reporte-asistencia-todos" onclick="exportarAsistenciaConsolidadoExcel()" class="bg-amber-700 hover:bg-amber-800 text-white rounded px-3 py-1.5 text-xs font-semibold transition">📥 Asistencia por Mes y Anual</button>
                     </div>
                 </div>
+                <div>
+                    <p class="text-xs font-semibold text-slate-600 mb-1">Horarios (clases, exámenes de cada trimestre y supletorios, con quiénes no han subido)</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button id="btn-reporte-horarios-todos" onclick="exportarHorariosConsolidadoExcel()" class="bg-purple-700 hover:bg-purple-800 text-white rounded px-3 py-1.5 text-xs font-semibold transition">📥 Horarios</button>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-slate-600 mb-1">Informes de Asignatura (un archivo por periodo, con quiénes no han subido)</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button class="bg-sky-700 hover:bg-sky-800 text-white rounded px-3 py-1.5 text-xs font-semibold transition" data-periodo="t1" data-etiqueta="1er Trimestre" onclick="exportarInformesAsignaturaConsolidadoExcel(this)">📥 1er Trimestre</button>
+                        <button class="bg-sky-700 hover:bg-sky-800 text-white rounded px-3 py-1.5 text-xs font-semibold transition" data-periodo="t2" data-etiqueta="2do Trimestre" onclick="exportarInformesAsignaturaConsolidadoExcel(this)">📥 2do Trimestre</button>
+                        <button class="bg-sky-700 hover:bg-sky-800 text-white rounded px-3 py-1.5 text-xs font-semibold transition" data-periodo="t3" data-etiqueta="3er Trimestre" onclick="exportarInformesAsignaturaConsolidadoExcel(this)">📥 3er Trimestre</button>
+                        <button class="bg-sky-700 hover:bg-sky-800 text-white rounded px-3 py-1.5 text-xs font-semibold transition" data-periodo="anual" data-etiqueta="Anual" onclick="exportarInformesAsignaturaConsolidadoExcel(this)">📥 Anual</button>
+                        <button class="bg-sky-700 hover:bg-sky-800 text-white rounded px-3 py-1.5 text-xs font-semibold transition" data-periodo="anual_supletorio" data-etiqueta="Anual luego del Supletorio" onclick="exportarInformesAsignaturaConsolidadoExcel(this)">📥 Anual (luego del Supletorio)</button>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-slate-600 mb-1">Actas de Juntas de Curso (todos los periodos, con quiénes no han subido)</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button id="btn-reporte-actas-junta-todos" onclick="exportarActasJuntaConsolidadoExcel()" class="bg-rose-700 hover:bg-rose-800 text-white rounded px-3 py-1.5 text-xs font-semibold transition">📥 Actas de Juntas de Curso</button>
+                    </div>
+                </div>
             </div>
             <p id="reportes-institucionales-mensaje" class="text-xs mt-3"></p>
         </div>
@@ -1387,10 +1409,10 @@
                     <div>
                         <label class="block text-[9px] font-bold text-slate-500 uppercase">Seleccionar Bloque</label>
                         <select id="filtro-periodo-reporte" onchange="renderizarActaAnualYEstadisticas()" class="p-1.5 border rounded bg-white font-bold text-xs text-emerald-900 outline-none">
-                            <option value="anual">🏆 Cuadro Consolidado Anual</option>
                             <option value="t1">📅 Informe del 1er Trimestre</option>
                             <option value="t2">📅 Informe del 2do Trimestre</option>
                             <option value="t3">📅 Informe del 3er Trimestre</option>
+                            <option value="anual">🏆 Cuadro Consolidado Anual</option>
                         </select>
                     </div>
                     <button id="btn-imprimir-actas" onclick="imprimirActasCalificaciones()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-3 py-1.5 rounded text-xs shadow whitespace-nowrap">🖨️ IMPRIMIR / DESCARGAR PDF</button>
@@ -6908,7 +6930,7 @@ ${estilosHtml}
                 if (!cursosConDatos.length) throw new Error('Ningún curso del plantel tiene todavía estudiantes registrados.');
                 const wb = XLSXE.utils.book_new();
                 const usados = {};
-                construirHojas(XLSXE, wb, usados, cursosConDatos);
+                await construirHojas(XLSXE, wb, usados, cursosConDatos);
                 const nombreArchivo = `${nombreArchivoBase}_${(db.configGeneral.amie || 'Institucion').replace(/\s+/g, '')}.xlsx`;
                 let wbout = XLSXE.write(wb, { type: 'array', bookType: 'xlsx' });
                 wbout = await excelIntentarIncrustarSello(wbout);
@@ -7104,6 +7126,298 @@ ${estilosHtml}
                         'CONTROL DE ASISTENCIA — POR MES Y TOTAL ANUAL (F=Falta, FJ=Falta Justificada, A=Atraso)',
                         encabezados, filas, anchos);
                 });
+            });
+        }
+
+        // ─────────────────────────── 7, 8 y 9. Horarios, Informes de Asignatura y Actas de Junta ───────────────────────────
+        // Docentes responsables, para poder decir QUIÉN no ha subido cada documento. Si la lista de
+        // usuarios no se puede leer, el reporte igual sale, con "Sin asignar" en esa columna.
+        async function excelObtenerResponsablesReportes() {
+            let usuarios = [];
+            try { usuarios = await llamarAPI('listarUsuarios', {}); } catch (e) { console.warn('Reportes: no se pudo leer la lista de usuarios', e); }
+            const acompanantePorCurso = {};
+            const docentesPorCursoMateria = {}; // "idCurso||materia" -> [nombres]
+            (usuarios || []).filter(u => u.activo).forEach(u => {
+                const nombre = u.nombre || u.usuario || '';
+                if (u.cursoAcompanamiento) acompanantePorCurso[u.cursoAcompanamiento] = nombre;
+                if (u.rol !== 'especialidad') return;
+                String(u.cursosAsignados || '').split(',').map(s => s.trim()).filter(Boolean).forEach(entrada => {
+                    const partes = entrada.split('::');
+                    const idCurso = partes[0].trim();
+                    const materia = partes.length > 1 ? partes[1].trim() : (u.materia || '');
+                    if (!idCurso || !materia) return;
+                    const clave = `${idCurso}||${materia}`;
+                    (docentesPorCursoMateria[clave] = docentesPorCursoMateria[clave] || []).push(nombre);
+                });
+            });
+            return {
+                acompanante: (idCurso) => acompanantePorCurso[idCurso] || 'Sin asignar',
+                docenteMateria: (idCurso, materia) => (docentesPorCursoMateria[`${idCurso}||${materia}`] || []).join(', ') || acompanantePorCurso[idCurso] || 'Sin asignar',
+                materiasAsignadas: (idCurso) => Object.keys(docentesPorCursoMateria).filter(k => k.indexOf(`${idCurso}||`) === 0).map(k => k.substring(idCurso.length + 2))
+            };
+        }
+
+        // Crea una hoja de reporte. Excel admite máximo 32.767 caracteres por celda; un texto más largo
+        // se recorta SOLO en este archivo (el dato guardado en el sistema no cambia).
+        function excelHojaReporteDocumentos(XLSXE, wb, usados, nombreHoja, titulo, encabezados, filas, anchos) {
+            const recortar = (v) => (typeof v === 'string' && v.length > 32000) ? v.slice(0, 32000) + ' … (texto recortado en este reporte)' : v;
+            const filasSeguras = filas.length ? filas.map(f => f.map(recortar)) : [['Sin registros']];
+            excelCrearHojaTablaGeneral(XLSXE, wb, usados, nombreHoja,
+                `Código AMIE: ${db.configGeneral.amie || '-'}   |   Año Lectivo: ${db.configGeneral.anioLectivo || '-'}   |   Generado: ${new Date().toLocaleDateString('es-EC')}`,
+                titulo, encabezados, filasSeguras.map(f => f.concat(Array(Math.max(0, encabezados.length - f.length)).fill(''))), anchos);
+        }
+
+        const TIPOS_HORARIO_REPORTE = [
+            { clave: 'clases', corto: 'Clases', hoja: 'Clases' },
+            { clave: 'examenes_t1', corto: 'Exámenes 1er Trimestre', hoja: 'Exámenes T1' },
+            { clave: 'examenes_t2', corto: 'Exámenes 2do Trimestre', hoja: 'Exámenes T2' },
+            { clave: 'examenes_t3', corto: 'Exámenes 3er Trimestre', hoja: 'Exámenes T3' },
+            { clave: 'supletorios', corto: 'Supletorios', hoja: 'Supletorios' }
+        ];
+
+        // Inicial y Preparatoria no tienen examen supletorio.
+        function excelGradoSinSupletorio(grado) {
+            const nivel = obtenerNivelAcademico(grado);
+            return !!(nivel && (nivel.clave === 'inicial' || nivel.clave === 'preparatoria'));
+        }
+
+        // Un horario cuenta como subido si tiene escrita al menos una asignatura o docente: abrir la
+        // pestaña ya crea celdas vacías y una fecha de inicio, y eso no significa que se haya llenado.
+        function excelHorarioTieneContenido(horario) {
+            if (!horario || typeof horario !== 'object') return false;
+            return Object.keys(horario).some(hora => {
+                if (!/^hora\d+$/.test(hora) || !horario[hora] || typeof horario[hora] !== 'object') return false;
+                return Object.values(horario[hora]).some(c => c && (String(c.materia || '').trim() || String(c.docente || '').trim()));
+            });
+        }
+
+        function exportarHorariosConsolidadoExcel() {
+            return excelGenerarReporteConsolidado('btn-reporte-horarios-todos', 'Horarios_Todos_Los_Cursos', async (XLSXE, wb, usados, cursosConDatos) => {
+                const responsables = await excelObtenerResponsablesReportes();
+                const aplica = (tipo, grado) => !(tipo.clave === 'supletorios' && excelGradoSinSupletorio(grado));
+                const resumen = [], faltantes = [];
+                cursosConDatos.forEach(({ catalogo, datos }) => {
+                    const labelCurso = catalogo.nombreVisible || catalogo.idCurso;
+                    const docente = responsables.acompanante(catalogo.idCurso);
+                    const fila = [labelCurso, docente];
+                    TIPOS_HORARIO_REPORTE.forEach(tipo => {
+                        if (!aplica(tipo, catalogo.grado)) { fila.push('No aplica'); return; }
+                        const subido = excelHorarioTieneContenido((datos.horarios || {})[tipo.clave]);
+                        fila.push(subido ? 'Subido' : 'NO HA SUBIDO');
+                        if (!subido) faltantes.push([labelCurso, docente, tipo.corto]);
+                    });
+                    resumen.push(fila);
+                });
+                excelHojaReporteDocumentos(XLSXE, wb, usados, 'Resumen', 'HORARIOS — RESUMEN POR CURSO',
+                    ['Curso', 'Docente de Acompañamiento', ...TIPOS_HORARIO_REPORTE.map(t => t.corto)], resumen, [22, 32, 14, 16, 16, 16, 14]);
+                excelHojaReporteDocumentos(XLSXE, wb, usados, 'No han subido', 'HORARIOS — QUIÉNES NO HAN SUBIDO',
+                    ['Curso', 'Docente de Acompañamiento', 'Horario que falta'], faltantes, [22, 32, 26]);
+
+                TIPOS_HORARIO_REPORTE.forEach(tipo => {
+                    const esClases = tipo.clave === 'clases';
+                    const clavesDia = esClases ? DIAS_HORARIO : ['dia1', 'dia2', 'dia3', 'dia4', 'dia5'];
+                    const filas = [];
+                    cursosConDatos.forEach(({ catalogo, datos }) => {
+                        const horario = (datos.horarios || {})[tipo.clave];
+                        if (!aplica(tipo, catalogo.grado) || !excelHorarioTieneContenido(horario)) return;
+                        const labelCurso = catalogo.nombreVisible || catalogo.idCurso;
+                        const docente = responsables.acompanante(catalogo.idCurso);
+                        if (!esClases) {
+                            const fechas = calcularDiasLaborablesDesde(horario.fechaInicio, 5);
+                            filas.push([labelCurso, docente, 'Fecha', ...clavesDia.map((_, i) => {
+                                const f = fechas[i] ? new Date(fechas[i] + 'T00:00:00') : null;
+                                return f ? `${NOMBRES_DIA_CORTO[f.getDay()]} ${f.toLocaleDateString('es-EC')}` : '';
+                            })]);
+                        }
+                        const estructura = obtenerEstructuraHorasPorGrado(catalogo.grado);
+                        const horasGuardadas = Object.keys(horario).filter(h => /^hora\d+$/.test(h)).map(h => parseInt(h.substring(4), 10));
+                        const totalHoras = Math.max(estructura.antesRecreo + estructura.despuesRecreo, ...horasGuardadas);
+                        for (let h = 1; h <= totalHoras; h++) {
+                            const celdas = horario[`hora${h}`] || {};
+                            filas.push([labelCurso, docente, `Hora ${h}`, ...clavesDia.map(dia => {
+                                const c = celdas[dia] || {};
+                                return [c.materia, c.docente].map(v => String(v || '').trim()).filter(Boolean).join(' — ');
+                            })]);
+                            if (h === estructura.antesRecreo) filas.push([labelCurso, docente, 'RECREO', '', '', '', '', '']);
+                        }
+                    });
+                    const columnasDia = esClases ? ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'] : ['Día 1', 'Día 2', 'Día 3', 'Día 4', 'Día 5'];
+                    excelHojaReporteDocumentos(XLSXE, wb, usados, tipo.hoja, ETIQUETAS_TIPO_HORARIO[tipo.clave],
+                        ['Curso', 'Docente de Acompañamiento', 'Hora', ...columnasDia], filas, [22, 30, 10, 28, 28, 28, 28, 28]);
+                });
+            });
+        }
+
+        // Secciones 2 a 4 del Informe de Asignatura, con las mismas reglas de la pantalla
+        // (renderizarResultadosNumericosInformeAsignatura), a partir de las notas guardadas de la materia.
+        function excelResumenResultadosInforme(catalogo, datos, materia, periodo) {
+            const asignaturasFijas = (datos.nucleo && datos.nucleo.asignaturasFijas) || {};
+            const califsMateria = (datos.materias && datos.materias[materia]) || (asignaturasFijas[materia] && asignaturasFijas[materia].calificaciones);
+            const cursoLectura = { label: catalogo.grado, asignatura: materia, calificaciones: {}, supletorios: {}, calificacionesAmbitos: califsMateria || {} };
+            if (!califsMateria || esCursoDeOVP(cursoLectura)) return null;
+            const esAmbitos = esCursoInicialOPreparatoria(cursoLectura);
+            const esCualitativo = esAmbitos || esCursoCualitativoElemental(cursoLectura);
+            const leeAmbitos = esMateriaCualitativaPorNombre(materia);
+            const cortes = { alcanzado: esAmbitos ? 8 : 7 };
+            const conteo = { n1: 0, n2: 0, n3: 0, n4: 0 };
+            const dificultades = [], nee = [];
+            let suma = 0, total = 0;
+            const fmt = (n) => esCualitativo ? numeroALetraCualitativa(n) : parseFloat(n).toFixed(2);
+            excelEstudiantesOrdenadosDeLista(datos.nucleo.estudiantes).forEach(est => {
+                let nota = '';
+                if (leeAmbitos) {
+                    const cod = calcularResumenCualitativoEstudiante(cursoLectura, est.id, periodo === 'anual_supletorio' ? 'anual' : periodo);
+                    const item = ESCALA_DESTREZAS_CUALITATIVA.find(e => e.val === cod);
+                    nota = (item && item.valor !== null) ? item.valor : '';
+                } else {
+                    const propio = califsMateria[est.id];
+                    cursoLectura.calificaciones[est.id] = derivarCalificacionesCompletas(propio);
+                    cursoLectura.supletorios[est.id] = (propio && propio.supletorio) || '';
+                    nota = obtenerNotaPorPeriodo(cursoLectura, est.id, periodo === 'anual_supletorio' && esAmbitos ? 'anual' : periodo);
+                }
+                const tieneNota = nota !== '' && nota !== undefined && !isNaN(parseFloat(nota));
+                if (est.nee && est.nee !== 'Ninguna') nee.push(`${est.nombre}: ${tieneNota ? fmt(nota) : '-'}`);
+                if (!tieneNota) return;
+                const n = parseFloat(nota), r = Math.round(n);
+                suma += n; total++;
+                if (esCualitativo) {
+                    if (r >= cortes.alcanzado) conteo.n1++; else if (r >= 5) conteo.n2++; else conteo.n3++;
+                } else {
+                    const sigla = obtenerEquivalenciaRGLOEI(n).sigla;
+                    if (sigla === 'DA') conteo.n1++; else if (sigla === 'A') conteo.n2++; else if (sigla === 'PA') conteo.n3++; else conteo.n4++;
+                }
+                if (esAmbitos ? r < 5 : n < 7) dificultades.push(`${est.nombre}: ${fmt(n)}`);
+            });
+            return {
+                escala: esCualitativo ? 'Cualitativa' : 'Cuantitativa',
+                total, promedio: total ? fmt(suma / total) : '-',
+                n1: conteo.n1, n2: conteo.n2, n3: conteo.n3, n4: esCualitativo ? '-' : conteo.n4,
+                dificultades: dificultades.join('\n'), nee: nee.join('\n')
+            };
+        }
+
+        function excelInformeTieneContenido(inf) {
+            const lleno = (v) => String(v === undefined || v === null ? '' : v).trim() !== '';
+            if (lleno(inf.observaciones) || lleno(inf.revisadoPor)) return true;
+            if (inf.conclusionesL.some(lleno) || Object.values(inf.consolidado).some(lleno)) return true;
+            return LISTAS_TABLA_IA.some(lista => inf[lista].some(fila =>
+                Object.keys(fila).some(k => k !== 'fijo' && !(k === 'c' && fila.fijo) && lleno(fila[k]))));
+        }
+
+        function exportarInformesAsignaturaConsolidadoExcel(botonEl) {
+            const periodo = botonEl.dataset.periodo;
+            const etiqueta = botonEl.dataset.etiqueta;
+            return excelGenerarReporteConsolidado(botonEl, `Informes_Asignatura_${etiqueta.replace(/\s+/g, '_')}_Todos_Los_Cursos`, async (XLSXE, wb, usados, cursosConDatos) => {
+                const responsables = await excelObtenerResponsablesReportes();
+                const resumen = [], faltantes = [];
+                const hojas = { consolidado: [], conclusiones: [], observaciones: [] };
+                LISTAS_TABLA_IA.forEach(l => { hojas[l] = []; });
+                const lleno = (v) => String(v === undefined || v === null ? '' : v).trim() !== '';
+
+                cursosConDatos.forEach(({ catalogo, datos }) => {
+                    const labelCurso = catalogo.nombreVisible || catalogo.idCurso;
+                    const informes = datos.informesAsignatura || {};
+                    const materias = [...new Set([...responsables.materiasAsignadas(catalogo.idCurso), ...Object.keys(datos.materias || {}), ...Object.keys(informes)])].sort((a, b) => a.localeCompare(b));
+                    materias.forEach(materia => {
+                        const docente = responsables.docenteMateria(catalogo.idCurso, materia);
+                        const noAplica = periodo === 'anual_supletorio' && (excelGradoSinSupletorio(catalogo.grado) || esMateriaCualitativaPorNombre(materia));
+                        // Se trabaja sobre una copia: el reporte no cambia nada de lo guardado.
+                        const original = informes[materia] && informes[materia][periodo];
+                        const inf = migrarInformeAsignaturaV2(JSON.parse(JSON.stringify(original || {})));
+                        const subido = !!original && excelInformeTieneContenido(inf);
+                        let r = null;
+                        try { r = excelResumenResultadosInforme(catalogo, datos, materia, periodo); }
+                        catch (e) { console.warn('Reporte de informes: resultados no calculados para', labelCurso, materia, e); }
+                        const estado = noAplica ? 'No aplica' : (subido ? 'Subido' : 'NO HA SUBIDO');
+                        if (!noAplica && !subido) faltantes.push([labelCurso, materia, docente, etiqueta]);
+                        resumen.push([labelCurso, materia, docente, estado,
+                            ...(r && !noAplica ? [r.escala, r.total, r.promedio, r.n1, r.n2, r.n3, r.n4, r.dificultades, r.nee] : ['-', '-', '-', '-', '-', '-', '-', '', ''])]);
+                        if (!subido || noAplica) return;
+
+                        const base = [labelCurso, materia, docente];
+                        LISTAS_TABLA_IA.forEach(lista => {
+                            const cols = IA_ESQUEMA[lista].cols;
+                            inf[lista].forEach((fila, i) => {
+                                if (!Object.keys(fila).some(k => k !== 'fijo' && !(k === 'c' && fila.fijo) && lleno(fila[k]))) return;
+                                hojas[lista].push([...base, i + 1, ...cols.map(c => fila[c.k] || '')]);
+                            });
+                        });
+                        hojas.consolidado.push([...base, ...ITEMS_CONSOLIDADO_IA.map(([k]) => inf.consolidado[k] || '')]);
+                        inf.conclusionesL.forEach((texto, i) => { if (lleno(texto)) hojas.conclusiones.push([...base, i + 1, texto]); });
+                        hojas.observaciones.push([...base, inf.observaciones || '', inf.revisadoPor || '']);
+                    });
+                });
+
+                const titulo = (t) => `INFORMES DE ASIGNATURA (${etiqueta.toUpperCase()}) — ${t}`;
+                const baseCols = ['Curso', 'Asignatura', 'Docente'];
+                const baseAnchos = [20, 26, 28];
+                excelHojaReporteDocumentos(XLSXE, wb, usados, 'Resumen y Resultados', titulo('ESTADO Y SECCIONES 2, 3 Y 4'),
+                    [...baseCols, 'Estado', 'Escala', 'Estudiantes con nota', 'Promedio del curso', 'DA / Alcanzado', 'A / En proceso', 'PA / Iniciado', 'NA', '3. Dificultades', '4. Estudiantes con NEE'],
+                    resumen, [...baseAnchos, 14, 12, 11, 10, 10, 10, 10, 6, 36, 36]);
+                excelHojaReporteDocumentos(XLSXE, wb, usados, 'No han subido', titulo('QUIÉNES NO HAN SUBIDO'), [...baseCols, 'Periodo'], faltantes, [...baseAnchos, 24]);
+                const nombresHoja = { cumplimiento: '5 Cumplimiento', resultados: '5.1 Resultados', alertas: '6 Alertas', refuerzoPed: '7 Refuerzo', nee: '8 NEE', compromisos: '10 Compromisos' };
+                const titulosSeccion = { cumplimiento: '5. CUMPLIMIENTO DE LA PLANIFICACIÓN CURRICULAR', resultados: '5.1 RESULTADOS POR APRENDIZAJES / DESTREZAS', alertas: '6. IDENTIFICACIÓN DE ALERTAS TEMPRANAS', refuerzoPed: '7. REFUERZO PEDAGÓGICO Y ACOMPAÑAMIENTO', nee: '8. ATENCIÓN A LAS NEE Y AJUSTES RAZONABLES', compromisos: '10. RECOMENDACIONES Y COMPROMISOS PARA LA JUNTA' };
+                const hojaLista = (lista) => excelHojaReporteDocumentos(XLSXE, wb, usados, nombresHoja[lista], titulo(titulosSeccion[lista]),
+                    [...baseCols, 'N.º', ...IA_ESQUEMA[lista].cols.map(c => c.t)], hojas[lista], [...baseAnchos, 5, ...IA_ESQUEMA[lista].cols.map(() => 28)]);
+                ['cumplimiento', 'resultados', 'alertas'].forEach(hojaLista);
+                excelHojaReporteDocumentos(XLSXE, wb, usados, '6.1 Consolidación', titulo('6.1. CONSOLIDACIÓN DE ALERTAS'),
+                    [...baseCols, ...ITEMS_CONSOLIDADO_IA.map(([, t]) => t)], hojas.consolidado, [...baseAnchos, 18, 18, 18, 18, 18]);
+                ['refuerzoPed', 'nee'].forEach(hojaLista);
+                excelHojaReporteDocumentos(XLSXE, wb, usados, '9 Conclusiones', titulo('9. CONCLUSIONES DEL DOCENTE'), [...baseCols, 'N.º', 'Conclusión'], hojas.conclusiones, [...baseAnchos, 5, 70]);
+                hojaLista('compromisos');
+                excelHojaReporteDocumentos(XLSXE, wb, usados, '11 Observaciones', titulo('11. OBSERVACIONES Y REVISADO POR'), [...baseCols, 'Observaciones', 'Revisado por'], hojas.observaciones, [...baseAnchos, 70, 28]);
+            });
+        }
+
+        const PERIODOS_ACTA_REPORTE = [['t1', '1er Trimestre'], ['t2', '2do Trimestre'], ['anual', 'Anual'], ['supletorio', 'Luego del Supletorio']];
+
+        function excelActaTieneContenido(acta) {
+            if (!acta || typeof acta !== 'object') return false;
+            const campos = ['fecha', 'lugar', 'horaInicio', 'horaFin', 'horaClausura', 'textoInstalacion', 'textoNee', 'textoRefuerzo', 'textoConducta', 'textoAcompanamiento', 'textoDece', 'textoResoluciones'];
+            if (campos.some(k => String(acta[k] || '').trim())) return true;
+            return Object.values(acta.ordenDia || {}).some(o => o && (o.si || o.no || String(o.obs || '').trim()));
+        }
+
+        function exportarActasJuntaConsolidadoExcel() {
+            return excelGenerarReporteConsolidado('btn-reporte-actas-junta-todos', 'Actas_Junta_Todos_Los_Cursos', async (XLSXE, wb, usados, cursosConDatos) => {
+                const responsables = await excelObtenerResponsablesReportes();
+                const resumen = [], faltantes = [], actas = [], orden = [], quorum = [];
+                cursosConDatos.forEach(({ catalogo, datos }) => {
+                    const labelCurso = catalogo.nombreVisible || catalogo.idCurso;
+                    const docente = responsables.acompanante(catalogo.idCurso);
+                    const fila = [labelCurso, docente];
+                    PERIODOS_ACTA_REPORTE.forEach(([periodo, etiqueta]) => {
+                        if (periodo === 'supletorio' && excelGradoSinSupletorio(catalogo.grado)) { fila.push('No aplica'); return; }
+                        const acta = (datos.nucleo.actasJunta || {})[periodo];
+                        if (!excelActaTieneContenido(acta)) {
+                            fila.push('NO HA SUBIDO');
+                            faltantes.push([labelCurso, docente, etiqueta]);
+                            return;
+                        }
+                        fila.push('Subido');
+                        actas.push([labelCurso, docente, etiqueta, acta.fecha || '', acta.lugar || '', acta.horaInicio || '', acta.horaFin || '', acta.horaClausura || '', acta.forma || '',
+                            acta.textoInstalacion || '', acta.textoNee || '', acta.textoRefuerzo || '', acta.textoConducta || '', acta.textoAcompanamiento || '', acta.textoDece || '', acta.textoResoluciones || '']);
+                        obtenerOrdenDelDia(periodo).forEach(p => {
+                            if (p.esTitulo) return;
+                            const od = (acta.ordenDia || {})[p.idxKey];
+                            if (!od || !(od.si || od.no || String(od.obs || '').trim())) return;
+                            orden.push([labelCurso, etiqueta, p.etiqueta, p.texto, od.si ? 'Sí' : (od.no ? 'No' : ''), od.obs || '']);
+                        });
+                        const convocatoria = (datos.nucleo.convocatorias || {})[periodo];
+                        (convocatoria && convocatoria.asistencia || []).forEach((a, i) => {
+                            if (String(a.asignatura || '').trim() || String(a.docente || '').trim()) quorum.push([labelCurso, etiqueta, i + 1, a.asignatura || '', a.docente || '']);
+                        });
+                    });
+                    resumen.push(fila);
+                });
+                const encabezadoPeriodos = PERIODOS_ACTA_REPORTE.map(([, e]) => e);
+                excelHojaReporteDocumentos(XLSXE, wb, usados, 'Resumen', 'ACTAS DE JUNTA DE CURSO — RESUMEN POR CURSO', ['Curso', 'Docente de Acompañamiento', ...encabezadoPeriodos], resumen, [22, 32, 14, 14, 14, 18]);
+                excelHojaReporteDocumentos(XLSXE, wb, usados, 'No han subido', 'ACTAS DE JUNTA DE CURSO — QUIÉNES NO HAN SUBIDO', ['Curso', 'Docente de Acompañamiento', 'Acta que falta'], faltantes, [22, 32, 22]);
+                excelHojaReporteDocumentos(XLSXE, wb, usados, 'Actas', 'ACTAS DE JUNTA DE CURSO — CONTENIDO',
+                    ['Curso', 'Docente de Acompañamiento', 'Periodo', 'Fecha', 'Lugar', 'Hora inicio', 'Hora fin', 'Hora clausura', 'Forma', 'Instalación', 'Casos NEE', 'Refuerzo', 'Conducta', 'Acompañamiento', 'DECE', 'Resoluciones'],
+                    actas, [22, 28, 18, 11, 18, 9, 9, 9, 12, 40, 40, 40, 40, 40, 40, 40]);
+                excelHojaReporteDocumentos(XLSXE, wb, usados, 'Orden del día', 'ACTAS DE JUNTA DE CURSO — ORDEN DEL DÍA', ['Curso', 'Periodo', 'Punto', 'Detalle', 'Cumplido', 'Observación'], orden, [22, 18, 7, 60, 9, 36]);
+                excelHojaReporteDocumentos(XLSXE, wb, usados, 'Asistentes', 'ACTAS DE JUNTA DE CURSO — ASISTENTES (según la Convocatoria)', ['Curso', 'Periodo', 'N.º', 'Asignatura', 'Docente'], quorum, [22, 18, 5, 30, 32]);
             });
         }
         // ═══════════════ FIN Reportes Institucionales consolidados ═══════════════
