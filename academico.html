@@ -2512,7 +2512,7 @@
         ];
         // Asignaturas que SÍ dicta un/a docente distinto/a (especialista) y que la/el docente de
         // acompañamiento únicamente recibe y registra en el Registro Interdisciplinar (o importa
-        // desde el archivo Excel que el/la especialista exporta con "Exportar para Acompañamiento").
+        // desde un archivo Excel con "📤 Importar Notas").
         const ASIGNATURAS_EXTERNAS_FIJAS = ['Inglés', 'Educación Cultural y Artística'];
 
         // ════════════════════════════════════════════════════════════════════════════════════
@@ -7824,7 +7824,6 @@ ${estilosHtml}
                                     <input type="file" accept=".xlsx" class="hidden" onchange="importarProyectoDesdeExcel(event, ${t})">
                                 </label>
                             </div>
-                            <button id="btn-exportar-acompanamiento-t${t}" onclick="exportarNotasParaAcompanamiento(${t})" class="hidden bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-1.5 rounded text-xs shadow" title="Genera el Excel con formato listo para que el/la docente de acompañamiento lo importe en su Registro Interdisciplinar">📮 Exportar para Acompañamiento (T${t})</button>
                             <button id="btn-imprimir-calificaciones-t${t}" onclick="imprimirCuadroCalificacionesTrimestre(${t})" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-3 py-1.5 rounded text-xs shadow whitespace-nowrap">🖨️ IMPRIMIR / DESCARGAR PDF</button>
                         </div>
                     </div>
@@ -7931,7 +7930,6 @@ ${estilosHtml}
                         cambiarPestaña('trimestre1');
                     }
                 }
-                [1,2,3].forEach(t => { const b = document.getElementById(`btn-exportar-acompanamiento-t${t}`); if(b) b.classList.add('hidden'); });
             } else {
                 menuWrapperAcompanamiento.classList.add('hidden');
                 cerrarMenusDesplegables();
@@ -7944,7 +7942,6 @@ ${estilosHtml}
                 if (seccionActivaFuera && PESTAÑAS_SOLO_PRINCIPAL_FUERA.includes(seccionActivaFuera.id.replace('sec-', ''))) {
                     cambiarPestaña('estudiantes');
                 }
-                [1,2,3].forEach(t => { const b = document.getElementById(`btn-exportar-acompanamiento-t${t}`); if(b) b.classList.remove('hidden'); });
             }
         }
 
@@ -10371,41 +10368,6 @@ ${estilosHtml}
         // asignatura externa que ya tenga nombre asignado, para el trimestre actualmente seleccionado.
         // El docente la llena fuera del sistema y la vuelve a subir con importarNotasExternasDesdeExcel,
         // evitando así tener que digitar nota por nota dentro de la aplicación.
-        // ═════ EXPORTACIÓN DE NOTAS DEL DOCENTE ESPECIALISTA (INGLÉS / ECA) PARA ACOMPAÑAMIENTO ═════
-        // Genera un Excel con el MISMO formato que espera "Importar Notas" del Registro
-        // Interdisciplinar (Cédula, Estudiante, <Nombre exacto de la asignatura>), para el trimestre
-        // indicado, tomando las notas ya calculadas del propio Cuadro de Digitación del especialista.
-        // El/la docente de acompañamiento solo debe entrar a Registro Interdisciplinar → elegir el
-        // mismo trimestre → "📤 Importar Notas" y subir este archivo tal cual.
-        async function exportarNotasParaAcompanamiento(t) {
-            const curso = db.cursos[db.cursoActivoIndex];
-            if (curso.esAcompanamiento) {
-                alert('Esta exportación es para docentes especialistas (Inglés / Educación Cultural y Artística) que NO son de acompañamiento.');
-                return;
-            }
-            if (!ASIGNATURAS_EXTERNAS_FIJAS.includes(curso.asignatura)) {
-                alert('Configure primero la asignatura de este curso (Inglés o Educación Cultural y Artística) en la pestaña ⚙️ Configuración.');
-                return;
-            }
-            const periodo = `t${t}`;
-            const etiquetasPeriodo = { t1: 'Trimestre 1', t2: 'Trimestre 2', t3: 'Trimestre 3' };
-            let filas = [["Cédula", "Estudiante", curso.asignatura]];
-            curso.estudiantes.sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(est => {
-                const nota = curso.calificaciones[est.id] ? calcularTrimestre(curso.calificaciones[est.id][periodo]).notaFinal : '';
-                filas.push([est.cedula, est.nombre, nota !== '' ? nota : '']);
-            });
-            let wb = XLSX.utils.book_new();
-            let ws = XLSX.utils.aoa_to_sheet(filas);
-            for(let r = 1; r <= filas.length - 1; r++) {
-                const direccionCelda = 'A' + (r + 1);
-                if(ws[direccionCelda]) { ws[direccionCelda].t = 's'; ws[direccionCelda].z = '@'; }
-            }
-            XLSX.utils.book_append_sheet(wb, ws, `${curso.asignatura}_${etiquetasPeriodo[periodo]}`.slice(0,31));
-            const labelCurso = (curso.label && curso.paralelo) ? `${curso.label}_${curso.paralelo}` : 'Curso';
-            await guardarArchivoExcel(wb, `Notas_${curso.asignatura}_${labelCurso}_${etiquetasPeriodo[periodo]}_para_Acompanamiento.xlsx`.replace(/\s+/g, '_'));
-            alert('Archivo generado. Entréguelo al/a la docente de acompañamiento: en su Registro Interdisciplinar, con este mismo trimestre seleccionado, debe usar el botón "📤 Importar Notas".');
-        }
-
         async function descargarPlantillaNotasExternas() {
             const curso = db.cursos[db.cursoActivoIndex];
             const selTrim = document.getElementById('sel-trimestre-externa');
