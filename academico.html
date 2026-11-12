@@ -1820,7 +1820,12 @@
                     <p id="acta-junta-print-meta" class="doc-meta">-</p>
                 </div>
 
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-y border-slate-800">1. Datos Informativos</div>
+                <div id="acta-junta-aviso-tamano" class="hidden no-print bg-red-100 border-b border-red-700 text-red-800 font-bold text-[11px] px-2 py-1"></div>
+
+                <!-- Reforma 2026-11: "Datos Informativos" y "Orden del Día" van sin número; solo se numeran
+                     los puntos a tratar. Los títulos con data-acta-punto toman su número/literal de
+                     obtenerOrdenDelDia() (ver renderizarActaJunta), así siempre coinciden con el orden del día. -->
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-y border-slate-800">Datos Informativos</div>
                 <table class="w-full border-collapse">
                     <tr class="divide-x divide-slate-800 border-b border-slate-800">
                         <td class="bg-slate-200 font-bold uppercase p-1.5 w-1/4">Docente de Acompañamiento:</td>
@@ -1840,7 +1845,7 @@
                     </tr>
                     <tr class="divide-x divide-slate-800">
                         <td class="bg-slate-200 font-bold uppercase p-1.5">Lugar de Realización:</td>
-                        <td class="p-1.5"><input type="text" id="acta-junta-lugar" oninput="guardarDatosActaJunta()" class="outline-none w-full"></td>
+                        <td class="p-1.5"><input type="text" id="acta-junta-lugar" maxlength="200" oninput="guardarDatosActaJunta()" class="outline-none w-full"></td>
                         <td class="bg-slate-200 font-bold uppercase p-1.5">Forma:</td>
                         <td class="p-1.5">
                             <select id="acta-junta-forma" oninput="guardarDatosActaJunta()" class="outline-none">
@@ -1851,7 +1856,7 @@
                     </tr>
                 </table>
 
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-y border-slate-800">2. Orden del Día</div>
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-y border-slate-800">Orden del Día</div>
                 <table class="w-full border-collapse">
                     <thead>
                         <tr class="bg-slate-200 font-bold divide-x divide-slate-800 border-b border-slate-800 text-center">
@@ -1861,7 +1866,7 @@
                     <tbody id="acta-junta-tabla-orden-dia" class="divide-y divide-slate-300"></tbody>
                 </table>
 
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-y border-slate-800">1. Constatación del quórum e instalación de la sesión</div>
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-y border-slate-800" data-acta-punto="quorum">1. Constatación del quórum e instalación de la sesión.</div>
                 <table class="w-full border-collapse">
                     <thead>
                         <tr class="bg-slate-200 font-bold divide-x divide-slate-800 border-b border-slate-800 text-center">
@@ -1872,10 +1877,18 @@
                 </table>
                 <div class="p-2 border-b border-slate-800">
                     <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Redacción de la instalación de la sesión (la escribe el/la docente de acompañamiento):</label>
-                    <textarea id="acta-junta-texto-instalacion" oninput="guardarDatosActaJunta()" placeholder="Ej: Siendo las ..., se constata el quórum reglamentario con la presencia de los/las docentes detallados/as, por lo que el/la docente de acompañamiento declara instalada la sesión de Junta de Docentes de Grado/Curso..." class="w-full p-2 outline-none resize-none h-16 text-xs"></textarea>
+                    <textarea id="acta-junta-texto-instalacion" maxlength="4000" oninput="guardarDatosActaJunta()" placeholder="Ej: Siendo las ..., se constata el quórum reglamentario con la presencia de los/las docentes detallados/as, por lo que el/la docente de acompañamiento declara instalada la sesión de Junta de Docentes de Grado/Curso..." class="w-full p-2 outline-none resize-none h-16 text-xs"></textarea>
                 </div>
 
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-y border-slate-800" id="acta-junta-titulo-31">3.1 Listado de estudiantes con calificación por asignatura menor a 7</div>
+                <div data-acta-bloque="actaAnterior">
+                    <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800" data-acta-punto="actaAnterior">2. Lectura y aprobación del acta anterior.</div>
+                    <textarea id="acta-junta-texto-acta-anterior" maxlength="3000" oninput="guardarDatosActaJunta()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-16" placeholder="Ej.: Se da lectura al acta de la junta anterior, la misma que es aprobada sin observaciones."></textarea>
+                </div>
+
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800" data-acta-punto="rendimiento">2. Análisis de rendimiento académico y toma de decisiones.</div>
+                <div class="bg-slate-100 font-bold uppercase px-2 py-1 border-b border-slate-800" data-acta-punto="lecturaInformes">a. Lectura del informe de docentes por asignaturas y promedios generales.</div>
+
+                <div class="bg-amber-50 font-bold uppercase px-2 py-1 border-b border-slate-800" id="acta-junta-titulo-31">Listado de estudiantes con calificación por asignatura menor a 7</div>
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse text-[11px]">
                         <thead id="acta-junta-thead-riesgo"></thead>
@@ -1884,7 +1897,7 @@
                     </table>
                 </div>
 
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-y border-slate-800" id="acta-junta-titulo-informe-materia">- Informe de docente por asignaturas</div>
+                <div class="bg-amber-50 font-bold uppercase px-2 py-1 border-y border-slate-800" id="acta-junta-titulo-informe-materia">Informe de docente por asignaturas</div>
                 <table class="w-full border-collapse" id="acta-junta-tabla-informe-materia-normal">
                     <thead>
                         <tr class="bg-slate-200 font-bold divide-x divide-slate-800 border-b border-slate-800 text-center">
@@ -1914,29 +1927,29 @@
                     <ul id="acta-junta-lista-no-promovidos" class="list-none space-y-0.5 text-[10px] text-red-900"></ul>
                 </div>
 
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">3.2 Informe de aprendizaje de los estudiantes con NEE</div>
-                <textarea id="acta-junta-texto-nee" oninput="guardarDatosActaJunta()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-16"></textarea>
-
                 <div id="acta-junta-bloque-refuerzo">
-                    <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">3.3 Actividades planificadas para el refuerzo académico</div>
-                    <textarea id="acta-junta-texto-refuerzo" oninput="guardarDatosActaJunta()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-16"></textarea>
+                    <div class="bg-slate-100 font-bold uppercase px-2 py-1 border-b border-slate-800" data-acta-punto="refuerzo">b. Actividades desarrolladas e informes de alerta temprana, planes de refuerzo o mejora de estudiantes con calificación menor a 7 puntos.</div>
+                    <textarea id="acta-junta-texto-refuerzo" maxlength="4000" oninput="guardarDatosActaJunta()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-16"></textarea>
                 </div>
 
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">6. Análisis conductual y asistencia de los estudiantes</div>
-                <textarea id="acta-junta-texto-conducta" oninput="guardarDatosActaJunta()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-16"></textarea>
+                <div class="bg-slate-100 font-bold uppercase px-2 py-1 border-b border-slate-800" data-acta-punto="nee">c. Informe de aprendizaje de los estudiantes con NEE.</div>
+                <textarea id="acta-junta-texto-nee" maxlength="4000" oninput="guardarDatosActaJunta()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-16"></textarea>
+
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800" data-acta-punto="dece">3. Intervención del Profesional DECE y/o docente DAI: recepción de reportes en casos puntuales de estudiantes.</div>
+                <textarea id="acta-junta-texto-dece" maxlength="4000" oninput="guardarDatosActaJunta()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-16"></textarea>
+
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800" data-acta-punto="conducta">4. Análisis conductual y asistencia de los estudiantes.</div>
+                <textarea id="acta-junta-texto-conducta" maxlength="4000" oninput="guardarDatosActaJunta()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-16"></textarea>
 
                 <div id="acta-junta-bloque-acompanamiento">
-                    <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">7. Lectura del informe de docente de Acompañamiento</div>
-                    <textarea id="acta-junta-texto-acompanamiento" oninput="guardarDatosActaJunta()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-16"></textarea>
+                    <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800" data-acta-punto="acompanamiento">5. Lectura del informe de docente de Acompañamiento.</div>
+                    <textarea id="acta-junta-texto-acompanamiento" maxlength="4000" oninput="guardarDatosActaJunta()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-16"></textarea>
                 </div>
 
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">8. Intervención del DECE en casos puntuales de estudiantes</div>
-                <textarea id="acta-junta-texto-dece" oninput="guardarDatosActaJunta()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-16"></textarea>
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800" data-acta-punto="resoluciones">6. Resoluciones.</div>
+                <textarea id="acta-junta-texto-resoluciones" maxlength="5000" oninput="guardarDatosActaJunta()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-16"></textarea>
 
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">9. Resoluciones</div>
-                <textarea id="acta-junta-texto-resoluciones" oninput="guardarDatosActaJunta()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-16"></textarea>
-
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">10. Clausura de la sesión</div>
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800" data-acta-punto="clausura">7. Clausura de la sesión.</div>
                 <p class="p-2 border-b border-slate-800">Siendo las <input type="time" id="acta-junta-hora-clausura" oninput="guardarDatosActaJunta()" class="outline-none border-b border-slate-400 w-24 text-center font-bold">, se da por finalizada la junta de docentes de grado/curso.</p>
 
                 <table class="w-full border-collapse">
@@ -1974,140 +1987,114 @@
                     <img src="" class="logo-institucional-img w-16 h-16 object-contain mx-auto mb-1" alt="Escudo Institucional">
                     <h3 id="iaacomp-print-ue" class="doc-nombre-ue">UNIDAD EDUCATIVA</h3>
                     <p id="iaacomp-print-amie" class="doc-amie">Código AMIE: -</p>
-                    <h4 class="doc-titulo">INFORME DEL DOCENTE DE ACOMPAÑAMIENTO</h4>
+                    <h4 class="doc-titulo" id="iac-titulo">INFORME DEL DOCENTE TUTOR O DE ACOMPAÑAMIENTO</h4>
                     <p id="ia-print-meta" class="doc-meta">-</p>
                 </div>
 
+                <!-- ═══ Reforma 2026-11: formato "Informe del Docente Tutor o de Acompañamiento" (12 apartados).
+                     Lo que la aplicación ya sabe (docente, nivel, curso, estudiantes, vicerrector, fecha de
+                     la Junta...) se llena solo; las tablas las arma renderizarInformeAcompanamiento() desde
+                     IAC_ESQUEMA. Los datos del formato anterior se migran sin borrarse
+                     (migrarInformeAcompanamientoV2). ═══ -->
+                <div id="iac-aviso-tamano" class="hidden no-print bg-red-100 border-b border-red-700 text-red-800 font-bold text-[11px] px-2 py-1"></div>
+
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-y border-slate-800">1. Datos Informativos</div>
                 <table class="w-full border-collapse text-[11px]">
                     <tr class="divide-x divide-slate-800 border-b border-slate-800">
-                        <td class="bg-slate-200 font-bold uppercase p-1.5 w-1/4">Fecha de Informe:</td>
-                        <td class="p-1"><input type="date" id="ia-fecha" oninput="guardarDatosInformeAcompanamiento()" class="w-full p-1 outline-none no-print-border"></td>
-                        <td class="bg-slate-200 font-bold uppercase p-1.5 w-1/6">No. Informe:</td>
-                        <td class="p-1"><input type="text" id="ia-numero" oninput="guardarDatosInformeAcompanamiento()" class="w-full p-1 outline-none no-print-border" placeholder="001-DOC.ACOMP-2026"></td>
-                    </tr>
-                </table>
-
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-y border-slate-800">Funcionario Responsable del Informe</div>
-                <table class="w-full border-collapse text-[11px]">
-                    <tr class="divide-x divide-slate-800 border-b border-slate-800">
-                        <td class="bg-slate-200 font-bold uppercase p-1.5 w-1/6">Nombre:</td>
-                        <td class="p-1" colspan="3"><input type="text" id="ia-func-nombre" oninput="guardarDatosInformeAcompanamiento()" class="w-full p-1 outline-none no-print-border"></td>
+                        <td class="bg-slate-200 font-bold uppercase p-1.5 w-1/5">Docente tutor / de acompañamiento</td>
+                        <td class="p-1.5 font-bold" colspan="5" id="iac-docente">-</td>
                     </tr>
                     <tr class="divide-x divide-slate-800 border-b border-slate-800">
-                        <td class="bg-slate-200 font-bold uppercase p-1.5">Contacto:</td>
-                        <td class="p-1"><input type="text" id="ia-func-telefono" oninput="guardarDatosInformeAcompanamiento()" placeholder="Teléfono" class="w-full p-1 outline-none no-print-border"></td>
-                        <td class="bg-slate-200 font-bold uppercase p-1.5 w-1/6">Correo:</td>
-                        <td class="p-1"><input type="text" id="ia-func-correo" oninput="guardarDatosInformeAcompanamiento()" class="w-full p-1 outline-none no-print-border"></td>
-                    </tr>
-                    <tr class="divide-x divide-slate-800">
-                        <td class="bg-slate-200 font-bold uppercase p-1.5">Cargo:</td>
-                        <td class="p-1" colspan="3"><span id="ia-func-cargo">-</span></td>
-                    </tr>
-                </table>
-
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-y border-slate-800">Informe Dirigido A</div>
-                <table class="w-full border-collapse text-[11px]">
-                    <tr class="divide-x divide-slate-800 border-b border-slate-800">
-                        <td class="bg-slate-200 font-bold uppercase p-1.5 w-1/6">Nombre:</td>
-                        <td class="p-1" colspan="3"><input type="text" id="ia-dir-nombre" oninput="guardarDatosInformeAcompanamiento()" class="w-full p-1 outline-none no-print-border"></td>
+                        <td class="bg-slate-200 font-bold uppercase p-1.5">Nivel / subnivel</td>
+                        <td class="p-1.5" id="iac-nivel">-</td>
+                        <td class="bg-slate-200 font-bold uppercase p-1.5 w-[13%]">Año y paralelo</td>
+                        <td class="p-1.5" id="iac-curso">-</td>
+                        <td class="bg-slate-200 font-bold uppercase p-1.5 w-[10%]">Sección</td>
+                        <td class="p-0.5 w-[14%]"><input type="text" data-iac-campo="seccion" maxlength="40" oninput="iacCampo(this)" class="w-full p-1 outline-none no-print-border" placeholder="Matutina"></td>
                     </tr>
                     <tr class="divide-x divide-slate-800 border-b border-slate-800">
-                        <td class="bg-slate-200 font-bold uppercase p-1.5">Contacto:</td>
-                        <td class="p-1"><input type="text" id="ia-dir-telefono" oninput="guardarDatosInformeAcompanamiento()" placeholder="Teléfono" class="w-full p-1 outline-none no-print-border"></td>
-                        <td class="bg-slate-200 font-bold uppercase p-1.5 w-1/6">Correo:</td>
-                        <td class="p-1"><input type="text" id="ia-dir-correo" oninput="guardarDatosInformeAcompanamiento()" class="w-full p-1 outline-none no-print-border"></td>
+                        <td class="bg-slate-200 font-bold uppercase p-1.5">Número total de estudiantes</td>
+                        <td class="p-1.5 font-bold" id="iac-total">0</td>
+                        <td class="bg-slate-200 font-bold uppercase p-1.5">Mujeres</td>
+                        <td class="p-0.5"><input type="number" min="0" data-iac-campo="mujeres" oninput="iacCampo(this)" class="w-full p-1 outline-none no-print-border text-center"></td>
+                        <td class="bg-slate-200 font-bold uppercase p-1.5">Hombres</td>
+                        <td class="p-0.5"><input type="number" min="0" data-iac-campo="hombres" oninput="iacCampo(this)" class="w-full p-1 outline-none no-print-border text-center"></td>
                     </tr>
-                    <tr class="divide-x divide-slate-800">
-                        <td class="bg-slate-200 font-bold uppercase p-1.5">Cargo:</td>
-                        <td class="p-1" colspan="3"><input type="text" id="ia-dir-cargo" oninput="guardarDatosInformeAcompanamiento()" class="w-full p-1 outline-none no-print-border" value="Vicerrector/a"></td>
-                    </tr>
-                </table>
-
-                <table class="w-full border-collapse text-[11px]">
-                    <tr class="divide-x divide-slate-800 border-y border-slate-800">
-                        <td class="bg-slate-200 font-bold uppercase p-1.5 w-1/6">Asunto:</td>
-                        <td class="p-1"><input type="text" id="ia-asunto" oninput="guardarDatosInformeAcompanamiento()" class="w-full p-1 outline-none no-print-border"></td>
+                    <tr class="divide-x divide-slate-800 border-b border-slate-800">
+                        <td class="bg-slate-200 font-bold uppercase p-1.5">Fecha de elaboración</td>
+                        <td class="p-0.5" colspan="2"><input type="date" data-iac-campo="fechaElab" oninput="iacCampo(this)" class="w-full p-1 outline-none no-print-border"></td>
+                        <td class="bg-slate-200 font-bold uppercase p-1.5">Fecha de Junta de Curso</td>
+                        <td class="p-0.5" colspan="2"><input type="date" data-iac-campo="fechaJunta" oninput="iacCampo(this)" class="w-full p-1 outline-none no-print-border" title="Si se deja vacía, se toma la fecha del Acta de Junta de este periodo"></td>
                     </tr>
                 </table>
+                <p id="iac-aviso-genero" class="hidden no-print text-[10px] text-amber-800 bg-amber-50 px-2 py-0.5 border-b border-slate-800"></p>
 
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">1. Antecedentes</div>
-                <textarea id="ia-antecedentes" oninput="guardarDatosInformeAcompanamiento()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-24"></textarea>
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">2. Objetivo del Informe</div>
+                <textarea data-iac-campo="objetivo" maxlength="1500" oninput="iacCampo(this)" class="iac-autoalto w-full p-2 border-b border-slate-800 outline-none resize-none min-h-[3.5rem]"></textarea>
 
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">2. Objetivo</div>
-                <textarea id="ia-objetivo" oninput="guardarDatosInformeAcompanamiento()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-20"></textarea>
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">3. Actividades Desarrolladas por el Docente Tutor</div>
+                <div id="iac-sec-actividades" class="border-b border-slate-800"></div>
 
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">3. Alcance</div>
-                <textarea id="ia-alcance" oninput="guardarDatosInformeAcompanamiento()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-20"></textarea>
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">3.1. Actividades de Integración, Participación y Vinculación con las Familias</div>
+                <div id="iac-sec-familias"></div>
+                <p class="text-[10px] italic px-2 py-1 border-b border-slate-800">*Nota: Registrar únicamente las actividades efectivamente realizadas. Cuando corresponda, señalar fecha, número de participantes y evidencias disponibles (actas, convocatorias, fotografías o registros), respetando las normas institucionales de protección de datos.</p>
 
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800 flex justify-between items-center no-print-flex">
-                    <span>4. Desarrollo</span>
-                    <button onclick="agregarFilaDesarrolloInforme()" class="no-print bg-emerald-700 text-white px-2 py-0.5 rounded text-[10px] font-bold normal-case">+ Añadir actividad</button>
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">4. Análisis del Rendimiento Académico del Curso</div>
+                <div class="bg-slate-100 font-bold px-2 py-1 border-b border-slate-800 flex justify-between items-center gap-2">
+                    <span>4.1. Resumen de asignaturas con mayores dificultades de aprendizaje</span>
+                    <button onclick="iacCargarDificultades()" class="no-print bg-sky-700 hover:bg-sky-800 text-white px-2 py-0.5 rounded text-[10px] font-bold normal-case" title="Llena la tabla con las asignaturas y los estudiantes con calificaciones bajas de este periodo (puede editarla después)">⚡ Cargar desde las calificaciones</button>
                 </div>
-                <table class="w-full border-collapse text-[11px]">
-                    <thead>
-                        <tr class="bg-slate-200 font-bold divide-x divide-slate-800 border-b border-slate-800 text-center">
-                            <td class="p-1 w-8">Nº</td><td class="p-1 text-left">Actividades Realizadas</td><td class="p-1 text-left w-1/3">Fuentes de Verificación</td><td class="p-1 w-8 no-print"></td>
-                        </tr>
-                    </thead>
-                    <tbody id="ia-tabla-desarrollo" class="divide-y divide-slate-300"></tbody>
-                </table>
+                <div id="iac-sec-dificultades" class="border-b border-slate-800"></div>
+                <div class="bg-slate-100 font-bold px-2 py-1 border-b border-slate-800">4.2. Acciones realizadas para mejorar los aprendizajes</div>
+                <textarea data-iac-campo="accionesAprend" maxlength="2000" oninput="iacCampo(this)" class="iac-autoalto w-full p-2 border-b border-slate-800 outline-none resize-none min-h-[3.5rem]" placeholder="Ej.: Refuerzo académico, tutorías y coordinación con los docentes de asignatura."></textarea>
 
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-y border-slate-800">Resumen de Estudiantes del Grado/Curso</div>
-                <table class="w-full border-collapse text-[11px] text-center">
-                    <thead>
-                        <tr class="bg-slate-200 font-bold divide-x divide-slate-800 border-b border-slate-800">
-                            <td class="p-1 text-left w-1/4"></td><td class="p-1">Hombres</td><td class="p-1">Mujeres</td><td class="p-1">Total</td>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-300">
-                        <tr class="divide-x divide-slate-800">
-                            <td class="bg-slate-100 font-bold uppercase text-left p-1.5">Matriculados</td>
-                            <td class="p-0.5"><input type="number" min="0" id="ia-matric-h" oninput="calcularTotalesInformeAcomp(); guardarDatosInformeAcompanamiento()" class="w-full text-center outline-none no-print-border"></td>
-                            <td class="p-0.5"><input type="number" min="0" id="ia-matric-m" oninput="calcularTotalesInformeAcomp(); guardarDatosInformeAcompanamiento()" class="w-full text-center outline-none no-print-border"></td>
-                            <td class="p-1 font-bold bg-slate-50" id="ia-matric-total">0</td>
-                        </tr>
-                        <tr class="divide-x divide-slate-800">
-                            <td class="bg-slate-100 font-bold uppercase text-left p-1.5">Asistentes</td>
-                            <td class="p-0.5"><input type="number" min="0" id="ia-asist-h" oninput="calcularTotalesInformeAcomp(); guardarDatosInformeAcompanamiento()" class="w-full text-center outline-none no-print-border"></td>
-                            <td class="p-0.5"><input type="number" min="0" id="ia-asist-m" oninput="calcularTotalesInformeAcomp(); guardarDatosInformeAcompanamiento()" class="w-full text-center outline-none no-print-border"></td>
-                            <td class="p-1 font-bold bg-slate-50" id="ia-asist-total">0</td>
-                        </tr>
-                        <tr class="divide-x divide-slate-800">
-                            <td class="bg-slate-100 font-bold uppercase text-left p-1.5">Retirados</td>
-                            <td class="p-0.5"><input type="number" min="0" id="ia-retir-h" oninput="calcularTotalesInformeAcomp(); guardarDatosInformeAcompanamiento()" class="w-full text-center outline-none no-print-border"></td>
-                            <td class="p-0.5"><input type="number" min="0" id="ia-retir-m" oninput="calcularTotalesInformeAcomp(); guardarDatosInformeAcompanamiento()" class="w-full text-center outline-none no-print-border"></td>
-                            <td class="p-1 font-bold bg-slate-50" id="ia-retir-total">0</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div class="p-2 border-b border-slate-800">
-                    <p class="font-bold uppercase text-[10px] mb-1">Observaciones:</p>
-                    <textarea id="ia-observaciones-retiro" oninput="guardarDatosInformeAcompanamiento()" class="w-full p-1 outline-none resize-none h-12 border border-slate-300 rounded" placeholder="Detalle de estudiantes retirados u otras observaciones de matrícula, si aplica."></textarea>
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800 flex justify-between items-center gap-2">
+                    <span>5. Asistencia y Permanencia Estudiantil</span>
+                    <button onclick="iacSugerirAsistencia()" class="no-print bg-sky-700 hover:bg-sky-800 text-white px-2 py-0.5 rounded text-[10px] font-bold normal-case" title="Cuenta a los estudiantes según la Asistencia Diaria registrada hasta hoy (puede editarlo después)">⚡ Calcular desde la Asistencia Diaria</button>
                 </div>
+                <div id="iac-sec-asistencia" class="border-b border-slate-800"></div>
+                <div class="px-2 pt-1 font-bold text-[10px] uppercase">Acciones realizadas:</div>
+                <textarea data-iac-campo="accionesAsistencia" maxlength="2000" oninput="iacCampo(this)" class="iac-autoalto w-full p-2 border-b border-slate-800 outline-none resize-none min-h-[3rem]"></textarea>
 
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">5. Conclusiones</div>
-                <textarea id="iaacomp-conclusiones" oninput="guardarDatosInformeAcompanamiento()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-24"></textarea>
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">6. Convivencia Escolar y Comportamiento</div>
+                <div id="iac-sec-convivencia" class="border-b border-slate-800"></div>
+                <div class="px-2 pt-1 font-bold text-[10px] uppercase">Observación general:</div>
+                <textarea data-iac-campo="obsConvivencia" maxlength="2000" oninput="iacCampo(this)" class="iac-autoalto w-full p-2 border-b border-slate-800 outline-none resize-none min-h-[3rem]"></textarea>
 
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">6. Recomendaciones</div>
-                <textarea id="iaacomp-recomendaciones" oninput="guardarDatosInformeAcompanamiento()" class="w-full p-2 border-b border-slate-800 outline-none resize-none h-24"></textarea>
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">7. Acompañamiento Socioemocional y Atención a la Diversidad</div>
+                <div id="iac-sec-socio" class="border-b border-slate-800"></div>
+                <div class="px-2 pt-1 font-bold text-[10px] uppercase">Acciones de coordinación:</div>
+                <textarea data-iac-campo="accionesCoordinacion" maxlength="2000" oninput="iacCampo(this)" class="iac-autoalto w-full p-2 border-b border-slate-800 outline-none resize-none min-h-[3rem]"></textarea>
 
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-y border-slate-800">Responsables</div>
-                <table class="w-full border-collapse">
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">8. Comunicación y Participación de los Padres de Familia o Representantes</div>
+                <div id="iac-sec-comunicacion" class="border-b border-slate-800"></div>
+
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">9. Logros y Aspectos Destacados del Curso</div>
+                <textarea data-iac-campo="logros" maxlength="3000" oninput="iacCampo(this)" class="iac-autoalto w-full p-2 border-b border-slate-800 outline-none resize-none min-h-[3.5rem]"></textarea>
+
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">10. Conclusiones</div>
+                <textarea data-iac-campo="conclusiones10" maxlength="4000" oninput="iacCampo(this)" class="iac-autoalto w-full p-2 border-b border-slate-800 outline-none resize-none min-h-[3.5rem]"></textarea>
+
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">11. Recomendaciones y Compromisos</div>
+                <div id="iac-sec-recomendaciones" class="border-b border-slate-800"></div>
+
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">12. Firmas de Responsabilidad</div>
+                <table class="w-full border-collapse text-[11px]">
                     <tr class="bg-slate-200 font-bold uppercase divide-x divide-slate-800 border-b border-slate-800 text-center text-[10px]">
-                        <td class="p-1.5 w-1/2">Desarrollo del Documento</td>
-                        <td class="p-1.5 w-1/2">Revisión y Aprobación</td>
+                        <td class="p-1.5 w-1/2">Elaborado por: Docente Tutor</td>
+                        <td class="p-1.5 w-1/2">Recibido / Conocimiento: Autoridad o Responsable de la Junta</td>
+                    </tr>
+                    <tr class="divide-x divide-slate-800 border-b border-slate-300">
+                        <td class="p-1.5 h-14 align-bottom">Firma: ______________________________</td>
+                        <td class="p-1.5 h-14 align-bottom">Firma: ______________________________</td>
+                    </tr>
+                    <tr class="divide-x divide-slate-800 border-b border-slate-300">
+                        <td class="p-1.5">Nombre: <span class="font-bold doc-firma-nombre" id="ia-firma-docente">-</span></td>
+                        <td class="p-1.5">Nombre: <span class="font-bold doc-firma-nombre" id="ia-firma-vicerrector">-</span> <span class="text-[10px]" id="ia-cargo-vicerrector-firma">(Vicerrector/a)</span></td>
                     </tr>
                     <tr class="divide-x divide-slate-800">
-                        <td class="p-4 h-16 align-bottom text-center doc-firma-nombre" id="ia-firma-docente">-</td>
-                        <td class="p-4 h-16 align-bottom text-center doc-firma-nombre" id="ia-firma-vicerrector">-</td>
-                    </tr>
-                    <tr class="divide-x divide-slate-800 text-center text-[10px]">
-                        <td class="p-1" id="ia-cargo-docente-firma">Docente de Acompañamiento</td>
-                        <td class="p-1" id="ia-cargo-vicerrector-firma">Vicerrector/a</td>
-                    </tr>
-                    <tr class="divide-x divide-slate-800 text-center text-[10px]">
-                        <td class="p-1">Firma: ____________________</td>
-                        <td class="p-1">Firma y Sello: ____________________</td>
+                        <td class="p-1.5">Fecha: <span id="iac-firma-fecha"></span></td>
+                        <td class="p-1.5">Fecha: </td>
                     </tr>
                 </table>
             </div>
@@ -5172,27 +5159,34 @@ ${estilosHtml}
 
         // ─────── Informe de Asignatura: imprime SOLO el periodo actualmente seleccionado
         // (T1/T2/T3/Anual/Anual tras Supletorio) — tal cual se ve en pantalla ───────
+        // Reforma 2026-11: copia del documento con cada celda editable convertida en texto (sin textos
+        // guía, sin cortar textos largos, fechas legibles). La pantalla no se modifica. La usan el Informe
+        // de Asignatura y el Informe del Docente Tutor o de Acompañamiento.
+        function clonarConCamposComoTexto(selector) {
+            const original = document.querySelector(selector);
+            sincronizarValoresParaImpresion(original);
+            const clon = original.cloneNode(true);
+            clon.querySelectorAll('textarea, input[type="text"], input[type="number"], input[type="date"]').forEach(campo => {
+                const div = document.createElement('div');
+                div.className = campo.className.replace(/\b(ia2-autoalto|iac-autoalto|text-sky-800)\b/g, '');
+                div.style.whiteSpace = 'pre-wrap';
+                div.style.height = 'auto';
+                let texto = (campo.tagName === 'TEXTAREA' ? campo.textContent : campo.getAttribute('value')) || '';
+                if (campo.type === 'date' && texto) texto = new Date(texto + 'T00:00:00').toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' });
+                div.textContent = texto;
+                if (!div.textContent) div.innerHTML = '&nbsp;';
+                campo.replaceWith(div);
+            });
+            return clon;
+        }
+
         async function imprimirInformeAsignaturaCompleto() {
             const boton = document.getElementById('btn-imprimir-informe-asignatura');
             const textoOriginal = boton ? boton.innerText : '';
             if (boton) { boton.disabled = true; boton.innerText = '⏳ Preparando...'; }
             try {
                 await esperarProximoFrame();
-                // Reforma 2026-11: en el clon, las celdas editables se pasan a texto (sin placeholders
-                // y sin cortar textos largos); la pantalla no se modifica.
-                const original = document.querySelector('#informe-asignatura-area');
-                sincronizarValoresParaImpresion(original);
-                const clon = original.cloneNode(true);
-                clon.querySelectorAll('textarea, input[type="text"]').forEach(campo => {
-                    const div = document.createElement('div');
-                    div.className = campo.className.replace('ia2-autoalto', '');
-                    div.style.whiteSpace = 'pre-wrap';
-                    div.style.height = 'auto';
-                    div.textContent = (campo.tagName === 'TEXTAREA' ? campo.textContent : campo.getAttribute('value')) || '';
-                    if (!div.textContent) div.innerHTML = '&nbsp;';
-                    campo.replaceWith(div);
-                });
-                const html = capturarBloqueImprimible(clon);
+                const html = capturarBloqueImprimible(clonarConCamposComoTexto('#informe-asignatura-area'));
                 abrirVentanaImpresionDocumentos('Informe de Asignatura', [{ html }], 'portrait', false);
             } finally {
                 if (boton) { boton.disabled = false; boton.innerText = textoOriginal; }
@@ -5252,8 +5246,8 @@ ${estilosHtml}
             const textoOriginal = boton ? boton.innerText : '';
             if (boton) { boton.disabled = true; boton.innerText = '⏳ Preparando...'; }
             try {
-                const html = capturarBloqueImprimible('#sec-informe_acompanamiento .doc-institucional');
-                abrirVentanaImpresionDocumentos('Informe de Acompañamiento', [{ html }], 'portrait', false);
+                const html = capturarBloqueImprimible(clonarConCamposComoTexto('#sec-informe_acompanamiento .doc-institucional'));
+                abrirVentanaImpresionDocumentos('Informe del Docente Tutor o de Acompañamiento', [{ html }], 'portrait', false);
             } finally {
                 if (boton) { boton.disabled = false; boton.innerText = textoOriginal; }
             }
@@ -6683,13 +6677,14 @@ ${estilosHtml}
                 bloques.push({ titulo: etiquetas[periodo], campos: [
                     ['Fecha', datos.fecha || '-'], ['Lugar', datos.lugar || '-'], ['Forma de la sesión', datos.forma || '-'],
                     ['Hora de Inicio', datos.horaInicio || '-'], ['Hora de Fin', datos.horaFin || '-'], ['Hora de Clausura', datos.horaClausura || '-'],
-                    ['Instalación de la sesión', datos.textoInstalacion || '-'],
-                    ['Tratamiento de casos NEE', datos.textoNee || '-'],
-                    ['Tratamiento de Planes de Refuerzo', datos.textoRefuerzo || '-'],
-                    ['Tratamiento de Conducta/Convivencia', datos.textoConducta || '-'],
-                    ['Informe de Acompañamiento', datos.textoAcompanamiento || '-'],
-                    ['Casos remitidos al DECE', datos.textoDece || '-'],
-                    ['Resoluciones de la Junta', datos.textoResoluciones || '-']
+                    ['Constatación del quórum e instalación de la sesión', datos.textoInstalacion || '-'],
+                    ...(periodo !== 't1' ? [['Lectura y aprobación del acta anterior', datos.textoActaAnterior || '-']] : []),
+                    ['Actividades, alerta temprana y planes de refuerzo', datos.textoRefuerzo || '-'],
+                    ['Informe de aprendizaje de estudiantes con NEE', datos.textoNee || '-'],
+                    ['Intervención del Profesional DECE y/o docente DAI', datos.textoDece || '-'],
+                    ['Análisis conductual y asistencia', datos.textoConducta || '-'],
+                    ['Lectura del informe de docente de Acompañamiento', datos.textoAcompanamiento || '-'],
+                    ['Resoluciones', datos.textoResoluciones || '-']
                 ]});
             });
             excelCrearHojaFormulario(XLSXE, wb, usados, 'Acta Junta Docentes', 'ACTA DE JUNTA DE DOCENTES (TODOS LOS PERIODOS)', bloques);
@@ -6697,15 +6692,33 @@ ${estilosHtml}
         function excelAgregarInformeAcompanamiento(XLSXE, wb, usados) {
             if (typeof obtenerDatosInformeAcompanamiento !== 'function') return;
             const bloques = [];
-            const etiquetas = { t1: 'Informe de Acompañamiento — 1er Trimestre', t2: 'Informe de Acompañamiento — 2do Trimestre', anual: 'Informe de Acompañamiento — Anual' };
+            const etiquetas = { t1: 'Informe del Docente Tutor — 1er Trimestre', t2: 'Informe del Docente Tutor — 2do Trimestre', anual: 'Informe del Docente Tutor — Anual' };
+            const curso = db.cursos[db.cursoActivoIndex];
+            // Formato 2026-11 (12 apartados): cada tabla se resume como líneas "• columna: valor | ...".
+            const tabla = (d, lista) => (d[iacClaveLista(lista)] || []).map(fila => {
+                const partes = IAC_ESQUEMA[lista].cols.map(c => {
+                    const v = fila[c.k] || (c.auto ? c.auto(fila, curso) : '');
+                    return String(v || '').trim() ? `${c.t}: ${v}` : '';
+                }).filter(Boolean);
+                return partes.length > (fila.fijo ? 1 : 0) ? `• ${partes.join(' | ')}` : '';
+            }).filter(Boolean).join('\n') || '-';
             ['t1', 't2', 'anual'].forEach(periodo => {
                 const d = obtenerDatosInformeAcompanamiento(periodo);
                 bloques.push({ titulo: etiquetas[periodo], campos: [
-                    ['Fecha', d.fecha || '-'], ['N° de Informe', d.numero || '-'],
-                    ['Asunto', d.asunto || '-'], ['Antecedentes', d.antecedentes || '-'],
-                    ['Objetivo', d.objetivo || '-'], ['Alcance', d.alcance || '-'],
-                    ['Desarrollo (actividades)', (d.desarrollo || []).map(x => `• ${x.actividad}`).join('\n')],
-                    ['Conclusiones', d.conclusiones || '-'], ['Recomendaciones', d.recomendaciones || '-']
+                    ['Sección', d.seccion || curso.jornada || '-'], ['Mujeres / Hombres', `${d.mujeres || '-'} / ${d.hombres || '-'}`],
+                    ['Fecha de elaboración', d.fechaElab || '-'], ['Fecha de Junta de Curso', d.fechaJunta || iacValorAutomatico('fechaJunta', curso, periodo) || '-'],
+                    ['2. Objetivo', d.objetivo || '-'],
+                    ['3. Actividades desarrolladas', tabla(d, 'actividades')],
+                    ['3.1. Integración con las familias', tabla(d, 'familias')],
+                    ['4.1. Asignaturas con dificultades', tabla(d, 'dificultades')],
+                    ['4.2. Acciones para mejorar los aprendizajes', d.accionesAprend || '-'],
+                    ['5. Asistencia y permanencia', tabla(d, 'asistencia')], ['5. Acciones realizadas', d.accionesAsistencia || '-'],
+                    ['6. Convivencia escolar', tabla(d, 'convivencia')], ['6. Observación general', d.obsConvivencia || '-'],
+                    ['7. Socioemocional y diversidad', tabla(d, 'socio')], ['7. Acciones de coordinación', d.accionesCoordinacion || '-'],
+                    ['8. Comunicación con representantes', tabla(d, 'comunicacion')],
+                    ['9. Logros y aspectos destacados', d.logros || '-'],
+                    ['10. Conclusiones', d.conclusiones10 || '-'],
+                    ['11. Recomendaciones y compromisos', tabla(d, 'recomendaciones')]
                 ]});
             });
             excelCrearHojaFormulario(XLSXE, wb, usados, 'Informe Acompañamiento', 'INFORME DE ACOMPAÑAMIENTO (TODOS LOS PERIODOS)', bloques);
@@ -7373,7 +7386,7 @@ ${estilosHtml}
 
         function excelActaTieneContenido(acta) {
             if (!acta || typeof acta !== 'object') return false;
-            const campos = ['fecha', 'lugar', 'horaInicio', 'horaFin', 'horaClausura', 'textoInstalacion', 'textoNee', 'textoRefuerzo', 'textoConducta', 'textoAcompanamiento', 'textoDece', 'textoResoluciones'];
+            const campos = ['fecha', 'lugar', 'horaInicio', 'horaFin', 'horaClausura', 'textoInstalacion', 'textoActaAnterior', 'textoNee', 'textoRefuerzo', 'textoConducta', 'textoAcompanamiento', 'textoDece', 'textoResoluciones'];
             if (campos.some(k => String(acta[k] || '').trim())) return true;
             return Object.values(acta.ordenDia || {}).some(o => o && (o.si || o.no || String(o.obs || '').trim()));
         }
@@ -7388,7 +7401,9 @@ ${estilosHtml}
                     const fila = [labelCurso, docente];
                     PERIODOS_ACTA_REPORTE.forEach(([periodo, etiqueta]) => {
                         if (periodo === 'supletorio' && excelGradoSinSupletorio(catalogo.grado)) { fila.push('No aplica'); return; }
-                        const acta = (datos.nucleo.actasJunta || {})[periodo];
+                        const actaGuardada = (datos.nucleo.actasJunta || {})[periodo];
+                        // Copia con las marcas del orden del día pasadas a su clave nueva (lo guardado no cambia).
+                        const acta = actaGuardada ? normalizarOrdenDiaActa(JSON.parse(JSON.stringify(actaGuardada))) : actaGuardada;
                         if (!excelActaTieneContenido(acta)) {
                             fila.push('NO HA SUBIDO');
                             faltantes.push([labelCurso, docente, etiqueta]);
@@ -7396,7 +7411,7 @@ ${estilosHtml}
                         }
                         fila.push('Subido');
                         actas.push([labelCurso, docente, etiqueta, acta.fecha || '', acta.lugar || '', acta.horaInicio || '', acta.horaFin || '', acta.horaClausura || '', acta.forma || '',
-                            acta.textoInstalacion || '', acta.textoNee || '', acta.textoRefuerzo || '', acta.textoConducta || '', acta.textoAcompanamiento || '', acta.textoDece || '', acta.textoResoluciones || '']);
+                            acta.textoInstalacion || '', acta.textoActaAnterior || '', acta.textoRefuerzo || '', acta.textoNee || '', acta.textoDece || '', acta.textoConducta || '', acta.textoAcompanamiento || '', acta.textoResoluciones || '']);
                         obtenerOrdenDelDia(periodo).forEach(p => {
                             if (p.esTitulo) return;
                             const od = (acta.ordenDia || {})[p.idxKey];
@@ -7414,8 +7429,8 @@ ${estilosHtml}
                 excelHojaReporteDocumentos(XLSXE, wb, usados, 'Resumen', 'ACTAS DE JUNTA DE CURSO — RESUMEN POR CURSO', ['Curso', 'Docente de Acompañamiento', ...encabezadoPeriodos], resumen, [22, 32, 14, 14, 14, 18]);
                 excelHojaReporteDocumentos(XLSXE, wb, usados, 'No han subido', 'ACTAS DE JUNTA DE CURSO — QUIÉNES NO HAN SUBIDO', ['Curso', 'Docente de Acompañamiento', 'Acta que falta'], faltantes, [22, 32, 22]);
                 excelHojaReporteDocumentos(XLSXE, wb, usados, 'Actas', 'ACTAS DE JUNTA DE CURSO — CONTENIDO',
-                    ['Curso', 'Docente de Acompañamiento', 'Periodo', 'Fecha', 'Lugar', 'Hora inicio', 'Hora fin', 'Hora clausura', 'Forma', 'Instalación', 'Casos NEE', 'Refuerzo', 'Conducta', 'Acompañamiento', 'DECE', 'Resoluciones'],
-                    actas, [22, 28, 18, 11, 18, 9, 9, 9, 12, 40, 40, 40, 40, 40, 40, 40]);
+                    ['Curso', 'Docente de Acompañamiento', 'Periodo', 'Fecha', 'Lugar', 'Hora inicio', 'Hora fin', 'Hora clausura', 'Forma', 'Quórum e instalación', 'Acta anterior', 'Refuerzo y alerta temprana', 'Estudiantes con NEE', 'DECE / DAI', 'Conducta y asistencia', 'Informe de Acompañamiento', 'Resoluciones'],
+                    actas, [22, 28, 18, 11, 18, 9, 9, 9, 12, 40, 40, 40, 40, 40, 40, 40, 40]);
                 excelHojaReporteDocumentos(XLSXE, wb, usados, 'Orden del día', 'ACTAS DE JUNTA DE CURSO — ORDEN DEL DÍA', ['Curso', 'Periodo', 'Punto', 'Detalle', 'Cumplido', 'Observación'], orden, [22, 18, 7, 60, 9, 36]);
                 excelHojaReporteDocumentos(XLSXE, wb, usados, 'Asistentes', 'ACTAS DE JUNTA DE CURSO — ASISTENTES (según la Convocatoria)', ['Curso', 'Periodo', 'N.º', 'Asignatura', 'Docente'], quorum, [22, 18, 5, 30, 32]);
             });
@@ -8609,67 +8624,61 @@ ${estilosHtml}
             return candidato;
         }
 
-        // Orden del día fijo de la Junta de Docentes de Grado o Curso (igual al formato institucional).
-        // Orden del día de la Junta de Docentes de Grado o Curso.
-        // - esTitulo: true → es un encabezado de grupo (ej. "Análisis de rendimiento académico."). No
-        //   tiene checkbox de Sí/No propio; se numera igual que su primer subpunto (ver más abajo).
-        // - esSubpunto: true → es un sub-punto que pertenece al grupo del esTitulo inmediatamente
-        //   anterior. Se numera como "N.1", "N.2", "N.3"... donde N es el número del PRIMER subpunto
-        //   del grupo (que es también el número que recibe el título del grupo).
-        // - soloDesdeT2: true → el punto solo aplica a partir del 2do Trimestre en adelante (incluye
-        //   Anual y Supletorio), ya que en el 1er Trimestre no existe una junta previa cuya acta leer.
+        // Orden del día de la Junta de Docentes de Grado o Curso (formato institucional, reforma 2026-11).
+        // - clave: identificador ESTABLE del punto; las marcas Sí/No/Observación de cada acta se guardan
+        //   con esta clave (ordenDia[clave]), así no se desordenan al cambiar de periodo ni de numeración.
+        // - esTitulo: punto con número propio que agrupa literales (a, b, c); no tiene Sí/No propio.
+        // - esSubpunto: literal (a., b., c.) del título inmediatamente anterior.
+        // - soloDesdeT2: solo desde el 2do Trimestre (Anual y Luego del Supletorio incluidos): en el 1er
+        //   Trimestre no hay acta anterior que leer, y los puntos siguientes se numeran en consecuencia.
         const ORDEN_DEL_DIA_JUNTA = [
-            { texto: 'Constatación del quórum e instalación de la sesión.' },
-            { texto: 'Lectura y aprobación del acta anterior.', soloDesdeT2: true },
-            { texto: 'Análisis de rendimiento académico.', esTitulo: true },
-            { texto: 'Lectura del informe de docentes por asignaturas y promedios generales.', esSubpunto: true },
-            { texto: 'Informe de aprendizaje de los estudiantes con NEE.', esSubpunto: true },
-            { texto: 'Actividades planificadas para el refuerzo académico.', esSubpunto: true },
-            { texto: 'Análisis conductual y asistencia de los estudiantes.' },
-            { texto: 'Lectura del informe de docente de Acompañamiento.' },
-            { texto: 'Intervención del DECE en casos puntuales de estudiantes.' },
-            { texto: 'Resoluciones.' },
-            { texto: 'Clausura de la sesión.' }
+            { clave: 'quorum', texto: 'Constatación del quórum e instalación de la sesión.' },
+            { clave: 'actaAnterior', texto: 'Lectura y aprobación del acta anterior.', soloDesdeT2: true },
+            { clave: 'rendimiento', texto: 'Análisis de rendimiento académico y toma de decisiones.', esTitulo: true },
+            { clave: 'lecturaInformes', texto: 'Lectura del informe de docentes por asignaturas y promedios generales.', esSubpunto: true },
+            { clave: 'refuerzo', texto: 'Actividades desarrolladas e informes de alerta temprana, planes de refuerzo o mejora de estudiantes con calificación menor a 7 puntos.', esSubpunto: true },
+            { clave: 'nee', texto: 'Informe de aprendizaje de los estudiantes con NEE.', esSubpunto: true },
+            { clave: 'dece', texto: 'Intervención del Profesional DECE y/o docente DAI: recepción de reportes en casos puntuales de estudiantes.' },
+            { clave: 'conducta', texto: 'Análisis conductual y asistencia de los estudiantes.' },
+            { clave: 'acompanamiento', texto: 'Lectura del informe de docente de Acompañamiento.' },
+            { clave: 'resoluciones', texto: 'Resoluciones.' },
+            { clave: 'clausura', texto: 'Clausura de la sesión.' }
         ];
+        // Posición de cada punto en la lista ANTERIOR (antes de 2026-11), con la que se guardaban las
+        // marcas Sí/No/Observación. Sirve para pasarlas a la clave nueva sin perder nada.
+        const CLAVE_ORDEN_DIA_POR_POSICION_ANTERIOR = { '0': 'quorum', '1': 'actaAnterior', '3': 'lecturaInformes', '4': 'nee', '5': 'refuerzo', '6': 'conducta', '7': 'acompanamiento', '8': 'dece', '9': 'resoluciones', '10': 'clausura' };
 
-        // Devuelve la lista de puntos del orden del día ya filtrada según el periodo (quitando "Lectura
-        // y aprobación del acta anterior" si es el 1er Trimestre) y con la etiqueta de numeración final
-        // ya calculada en cada punto (campo "etiqueta"): enteros consecutivos para los puntos normales
-        // (1, 2, 3...), y para el grupo "Análisis de rendimiento académico" tanto el título como sus 3
-        // subpuntos comparten el mismo número entero N, mostrándose como N, N.1, N.2, N.3 — de modo que
-        // el punto que sigue después del grupo continúa la numeración en N+3 (ej.: 1, 2, 3, 3.1, 3.2,
-        // 3.3, 6, 7, 8, 9, 10).
+        // Pasa las marcas del orden del día guardadas por posición (formato anterior) a su clave estable.
+        // Idempotente; nunca pisa una marca que ya exista con la clave nueva.
+        function normalizarOrdenDiaActa(acta) {
+            if (!acta || typeof acta !== 'object') return acta;
+            if (!acta.ordenDia || typeof acta.ordenDia !== 'object') { acta.ordenDia = {}; return acta; }
+            Object.keys(CLAVE_ORDEN_DIA_POR_POSICION_ANTERIOR).forEach(pos => {
+                if (acta.ordenDia[pos] === undefined) return;
+                const clave = CLAVE_ORDEN_DIA_POR_POSICION_ANTERIOR[pos];
+                if (acta.ordenDia[clave] === undefined) acta.ordenDia[clave] = acta.ordenDia[pos];
+                delete acta.ordenDia[pos];
+            });
+            return acta;
+        }
+
+        // Puntos del orden del día visibles en el periodo, con su etiqueta final: "1.", "2.", ... para los
+        // puntos (el título de grupo también lleva número) y "a.", "b.", "c." para sus literales.
+        // 1er Trimestre: 1 quórum, 2 rendimiento (a, b, c), 3 DECE, 4 conducta, 5 acompañamiento,
+        // 6 resoluciones, 7 clausura. Desde el 2do Trimestre se inserta "2. Lectura y aprobación del acta
+        // anterior" y lo demás corre un número (3 rendimiento ... 8 clausura).
         function obtenerOrdenDelDia(periodo) {
-            const visibles = ORDEN_DEL_DIA_JUNTA.filter(p => !(p.soloDesdeT2 && periodo === 't1'));
-
-            // Primera pasada: número entero secuencial para cada punto real (los títulos de grupo no
-            // consumen número propio; toman prestado el de su primer subpunto en la segunda pasada).
-            let contador = 0;
-            const numerados = visibles.map(p => {
-                let numero = null;
-                if(!p.esTitulo) { contador++; numero = contador; }
-                // idxKey identifica el punto de forma estable (por su posición en la lista ORIGINAL,
-                // no en la filtrada), para que las marcas de Sí/No/Observación no se desordenen al
-                // cambiar entre T1 (sin el punto 2) y los demás periodos (con el punto 2 incluido).
-                const idxKey = ORDEN_DEL_DIA_JUNTA.indexOf(p);
-                return { ...p, numero, idxKey };
-            });
-
-            // Segunda pasada: calcula la etiqueta final a mostrar para cada punto.
-            let numeroGrupoActual = null, subIndiceActual = 0;
-            return numerados.map((p, i) => {
-                if(p.esTitulo) {
-                    const primerSubpunto = numerados.slice(i + 1).find(x => x.esSubpunto);
-                    numeroGrupoActual = primerSubpunto ? primerSubpunto.numero : null;
-                    subIndiceActual = 0;
-                    return { ...p, etiqueta: numeroGrupoActual !== null ? String(numeroGrupoActual) : '' };
-                }
-                if(p.esSubpunto) {
-                    subIndiceActual++;
-                    return { ...p, etiqueta: `${numeroGrupoActual}.${subIndiceActual}` };
-                }
-                return { ...p, etiqueta: String(p.numero) };
-            });
+            let numero = 0, literal = 0;
+            return ORDEN_DEL_DIA_JUNTA
+                .filter(p => !(p.soloDesdeT2 && periodo === 't1'))
+                .map(p => {
+                    if (p.esSubpunto) {
+                        literal++;
+                        return { ...p, idxKey: p.clave, numero, etiqueta: `${String.fromCharCode(96 + literal)}.` };
+                    }
+                    numero++; literal = 0;
+                    return { ...p, idxKey: p.clave, numero, etiqueta: `${numero}.` };
+                });
         }
 
         function obtenerClaveConvocatoria(periodo) {
@@ -8878,148 +8887,400 @@ ${estilosHtml}
         const CONCLUSIONES_INFORME_ACOMP_DEFECTO = '• Desarrollo Integral: el periodo combinó con éxito las áreas académica, cultural, deportiva y socioemocional, potenciando la formación integral del estudiantado.\n• Clima Escolar: el acompañamiento socioemocional fortaleció los valores institucionales y la convivencia armónica, previniendo conflictos y consolidando un entorno escolar positivo.\n• Identidad y Participación: las actividades culturales y deportivas incrementaron el sentido de pertenencia, promoviendo el trabajo en equipo y la libre expresión artística.\n• Continuidad Pedagógica: a pesar de los imprevistos y las limitaciones de tiempo, los ajustes oportunos a la planificación garantizaron la continuidad del proceso formativo.\n• Marco Normativo: la comunidad educativa demostró un conocimiento sólido de los acuerdos del Código de Convivencia y los lineamientos del Acuerdo Nro. MINEDUC-MINEDUC-2023-00081-A para el abordaje restaurativo de conflictos.';
         const RECOMENDACIONES_INFORME_ACOMP_DEFECTO = '• Sostenibilidad Socioemocional: institucionalizar talleres permanentes enfocados en autoestima y resiliencia para asegurar un entorno inclusivo, seguro y de apoyo continuo.\n• Fomento del Bienestar: diseñar cronogramas específicos de prácticas deportivas y recreativas que refuercen la disciplina, la cooperación y la salud física.\n• Vinculación Cultural: ampliar los espacios artísticos y comunitarios con el fin de seguir incentivando la creatividad y el arraigo a la identidad cultural.\n• Optimización del Tiempo: implementar un sistema de monitoreo constante de la calendarización escolar para anticipar ajustes y evitar interrupciones en el avance académico.\n• Refuerzo Legal: continuar con la socialización y aplicación práctica del marco formativo y restaurativo vigente en la normativa ministerial ante conductas problemáticas.';
 
+        // ═══════════ Informe del Docente Tutor o de Acompañamiento — REFORMA 2026-11 (12 apartados) ═══════════
+        // Formato institucional "FORMATO_INFORME TUTOR O DOCENTE DE ACOMPAÑAMIENTO". Lo que la aplicación ya
+        // conoce se completa solo (docente, nivel, curso, número de estudiantes, sección, vicerrector,
+        // fecha de la Junta, estudiantes con NEE) y se puede corregir a mano; dejar una de esas celdas
+        // vacía vuelve al valor automático.
+        //
+        // SIN PÉRDIDA DE DATOS: los campos del formato anterior (asunto, antecedentes, alcance, contactos,
+        // desarrollo, matriculados, etc.) NUNCA se borran: quedan guardados tal cual en el mismo objeto.
+        // Lo que tiene equivalente en el formato nuevo se copia la primera vez que se abre cada periodo.
+        //
+        // LÍMITE DE GOOGLE SHEETS: cada periodo (t1, t2, anual) se guarda en su PROPIA celda
+        // (Datos_InformesAcomp, fila "idCurso::periodo" — ver escribirPorPeriodoDeCurso_ en Código.gs).
+        // Un cambio que deje el informe del periodo por encima de LIMITE_INFORMES_ACOMP no se aplica
+        // (se devuelve el valor anterior y se avisa).
+        const LIMITE_INFORMES_ACOMP = 45000;
+        const IAC_PERIODOS = { t1: 'PRIMER TRIMESTRE', t2: 'SEGUNDO TRIMESTRE', anual: 'INFORME ANUAL' };
+        const IAC_AMBITOS = ['Organización del curso', 'Seguimiento académico', 'Asistencia y puntualidad', 'Convivencia escolar', 'Acompañamiento socioemocional', 'Comunicación con representantes', 'Atención a la diversidad', 'Participación institucional', 'Integración y participación familiar'];
+        // Filas fijas de las tablas 5 a 8 ([clave estable, texto]).
+        const IAC_FIJAS = {
+            asistencia: [['regular', 'Asistencia regular'], ['atrasos', 'Atrasos frecuentes'], ['reiteradas', 'Inasistencias reiteradas'], ['justificadas', 'Inasistencias justificadas ocasionales'], ['retirados', 'Retirados'], ['total', 'TOTAL, MATRICULADOS']],
+            convivencia: [['relaciones', 'Relaciones interpersonales'], ['acuerdos', 'Respeto y cumplimiento de acuerdos'], ['conflictos', 'Resolución pacífica de conflictos'], ['colaborativo', 'Participación y trabajo colaborativo']],
+            socio: [['nee', 'Estudiantes con necesidades educativas específicas identificadas en registros institucionales.'], ['ajustes', 'Estudiantes con ajustes razonables o apoyos pedagógicos'], ['dece', 'Casos con orientación o seguimiento del DECE'], ['adicional', 'Casos que requieren seguimiento adicional']],
+            comunicacion: [['reunion', 'Reunión general de representantes'], ['entrevistas', 'Entrevistas individuales'], ['rendimiento', 'Comunicaciones sobre rendimiento académico'], ['asistencia', 'Comunicaciones sobre asistencia y puntualidad'], ['compromisos', 'Compromisos establecidos']]
+        };
+        // Columnas de cada tabla. k = clave guardada; ml = maxlength; fija = columna de texto que en las
+        // filas oficiales no se edita; num = número centrado; auto = valor que se calcula si la celda está vacía.
+        const IAC_ESQUEMA = {
+            actividades: { numerar: true, boton: '➕ Agregar actividad', max: 25, cols: [
+                { k: 'amb', t: 'Ámbito de gestión', w: 'w-[22%]', ml: 120, fija: true, ph: 'Ámbito' },
+                { k: 'act', t: 'Actividades desarrolladas', ml: 800, ph: 'Describa las actividades realizadas.' },
+                { k: 'res', t: 'Resultados / evidencias', ml: 600, ph: 'Resultados obtenidos y evidencias disponibles.' }
+            ] },
+            familias: { numerar: true, boton: '➕ Agregar actividad', max: 20, cols: [
+                { k: 'act', t: 'Actividad desarrollada', w: 'w-[20%]', ml: 200, ph: 'Ej.: Escuela para padres' },
+                { k: 'desc', t: 'Descripción de la actividad', ml: 600, ph: 'Breve descripción, fecha y evidencias.' },
+                { k: 'part', t: 'Participantes', w: 'w-[15%]', ml: 150, ph: 'Ej.: 25 representantes' },
+                { k: 'res', t: 'Resultados alcanzados', ml: 500, ph: 'Resultados alcanzados.' }
+            ] },
+            dificultades: { numerar: true, boton: '➕ Agregar asignatura', max: 20, cols: [
+                { k: 'asig', t: 'Asignatura', w: 'w-[22%]', ml: 120, ph: 'Asignatura' },
+                { k: 'est', t: 'Estudiantes con dificultades', ml: 800, ph: 'Número y nombres de los estudiantes.' },
+                { k: 'obs', t: 'Observaciones', ml: 500, ph: 'Observaciones.' }
+            ] },
+            asistencia: { numerar: false, boton: null, max: 6, cols: [
+                { k: 'ind', t: 'Indicador', w: 'w-[34%]', ml: 120, fija: true },
+                { k: 'n', t: 'N.º de estudiantes', w: 'w-[14%]', ml: 10, num: true,
+                  auto: (fila, curso) => fila.clave === 'total' ? String((curso.estudiantes || []).length) : '' },
+                { k: 'obs', t: 'Observaciones', ml: 500, ph: 'Observaciones.' }
+            ] },
+            convivencia: { numerar: false, boton: '➕ Agregar aspecto', max: 12, cols: [
+                { k: 'asp', t: 'Aspectos analizados', w: 'w-[28%]', ml: 150, fija: true, ph: 'Aspecto' },
+                { k: 'sit', t: 'Situación identificada', ml: 600, ph: 'Situación identificada.' },
+                { k: 'acc', t: 'Acciones implementadas', ml: 600, ph: 'Acciones implementadas.' }
+            ] },
+            socio: { numerar: false, boton: '➕ Agregar aspecto', max: 12, cols: [
+                { k: 'asp', t: 'Aspecto', w: 'w-[40%]', ml: 200, fija: true, ph: 'Aspecto' },
+                { k: 'n', t: 'N.º de estudiantes', w: 'w-[14%]', ml: 10, num: true,
+                  auto: (fila, curso) => fila.clave === 'nee' ? String((curso.estudiantes || []).filter(e => e.nee && e.nee !== 'Ninguna').length) : '' },
+                { k: 'obs', t: 'Acciones / observaciones', ml: 600, ph: 'Acciones u observaciones.' }
+            ] },
+            comunicacion: { numerar: false, boton: '➕ Agregar actividad', max: 12, cols: [
+                { k: 'act', t: 'Actividad', w: 'w-[34%]', ml: 150, fija: true, ph: 'Actividad' },
+                { k: 'n', t: 'N.º de participantes / casos', w: 'w-[16%]', ml: 20, num: true },
+                { k: 'res', t: 'Resultados', ml: 600, ph: 'Resultados.' }
+            ] },
+            recomendaciones: { numerar: true, boton: '➕ Agregar recomendación', max: 20, cols: [
+                { k: 'rec', t: 'Recomendación / compromiso', ml: 600, ph: 'Recomendación o compromiso.' },
+                { k: 'resp', t: 'Responsable', w: 'w-[22%]', ml: 150, ph: 'Responsable' },
+                { k: 'seg', t: 'Acción de seguimiento', w: 'w-[28%]', ml: 400, ph: 'Acción de seguimiento.' }
+            ] }
+        };
+        const IAC_LISTAS = Object.keys(IAC_ESQUEMA);
+        const IAC_CAMPOS = ['seccion', 'mujeres', 'hombres', 'fechaElab', 'fechaJunta', 'objetivo', 'accionesAprend', 'accionesAsistencia', 'obsConvivencia', 'accionesCoordinacion', 'logros', 'conclusiones10'];
+
         function obtenerEtiquetaPeriodoInformeAcomp(periodo) {
             return periodo === 't1' ? 'el Primer Trimestre' : periodo === 't2' ? 'el Segundo Trimestre' : 'el Informe Anual';
         }
 
-        // Obtiene (creando con valores por defecto si es la primera vez) los datos del informe de
-        // acompañamiento del curso activo para el periodo indicado ('t1', 't2' o 'anual').
+        function iacFilaVacia(lista) {
+            const fila = {};
+            IAC_ESQUEMA[lista].cols.forEach(c => { fila[c.k] = ''; });
+            return fila;
+        }
+
+        // Pasa un periodo al formato nuevo (v: 2) sin tocar los campos viejos. Idempotente.
+        function migrarInformeAcompanamientoV2(datos, curso, periodo) {
+            if (!datos || typeof datos !== 'object') return datos;
+            if (datos.v !== 2) {
+                const textoUtil = (txt, porDefecto) => (txt && String(txt).trim() && txt !== porDefecto) ? String(txt) : '';
+                const lineas = (txt) => String(txt || '').split(/\r?\n/).map(s => s.replace(/^[•\-\*]\s*/, '').trim()).filter(Boolean);
+                datos.seccion = datos.seccion || '';
+                datos.mujeres = datos.matricM !== undefined && datos.matricM !== null ? String(datos.matricM) : '';
+                datos.hombres = datos.matricH !== undefined && datos.matricH !== null ? String(datos.matricH) : '';
+                datos.fechaElab = datos.fecha || '';
+                datos.fechaJunta = '';
+                if (!datos.objetivo) datos.objetivo = `Informar a la Junta de Curso sobre las actividades de acompañamiento, el rendimiento académico, la asistencia, la convivencia y el acompañamiento socioemocional de los estudiantes durante ${obtenerEtiquetaPeriodoInformeAcomp(periodo).replace(/^el /, 'el ')}, con el fin de tomar decisiones oportunas.`;
+                datos.actividades = IAC_AMBITOS.map(amb => ({ amb, act: '', res: '', fijo: 1 }));
+                // Filas de "4. Desarrollo" del formato anterior: se conservan como actividades extra,
+                // salvo que sean las sugeridas por defecto sin ningún cambio.
+                const desarrollo = Array.isArray(datos.desarrollo) ? datos.desarrollo : [];
+                const esDesarrolloPorDefecto = desarrollo.length === DESARROLLO_INFORME_ACOMP_DEFECTO.length
+                    && desarrollo.every((d, i) => d && d.actividad === DESARROLLO_INFORME_ACOMP_DEFECTO[i].actividad && d.fuente === DESARROLLO_INFORME_ACOMP_DEFECTO[i].fuente);
+                if (!esDesarrolloPorDefecto) {
+                    desarrollo.filter(d => d && (String(d.actividad || '').trim() || String(d.fuente || '').trim()))
+                        .forEach(d => datos.actividades.push({ amb: '', act: d.actividad || '', res: d.fuente || '' }));
+                }
+                datos.familias = [iacFilaVacia('familias')];
+                datos.dificultades = [iacFilaVacia('dificultades')];
+                datos.accionesAprend = '';
+                const retirados = (parseInt(datos.retirH, 10) || 0) + (parseInt(datos.retirM, 10) || 0);
+                datos.asistencia = IAC_FIJAS.asistencia.map(([clave, ind]) => ({ clave, ind, n: '', obs: '', fijo: 1 }));
+                const filaRetirados = datos.asistencia.find(f => f.clave === 'retirados');
+                if (retirados > 0) filaRetirados.n = String(retirados);
+                if (datos.observacionesRetiro) filaRetirados.obs = String(datos.observacionesRetiro);
+                datos.accionesAsistencia = '';
+                datos.convivencia = IAC_FIJAS.convivencia.map(([clave, asp]) => ({ clave, asp, sit: '', acc: '', fijo: 1 }));
+                datos.obsConvivencia = '';
+                datos.socio = IAC_FIJAS.socio.map(([clave, asp]) => ({ clave, asp, n: '', obs: '', fijo: 1 }));
+                datos.accionesCoordinacion = '';
+                datos.comunicacion = IAC_FIJAS.comunicacion.map(([clave, act]) => ({ clave, act, n: '', res: '', fijo: 1 }));
+                datos.logros = '';
+                datos.conclusiones10 = textoUtil(datos.conclusiones, CONCLUSIONES_INFORME_ACOMP_DEFECTO);
+                const recomendaciones = lineas(textoUtil(datos.recomendaciones, RECOMENDACIONES_INFORME_ACOMP_DEFECTO));
+                datos.recomendaciones11 = recomendaciones.length ? recomendaciones.map(rec => ({ rec, resp: '', seg: '' })) : [iacFilaVacia('recomendaciones')];
+                datos.v = 2;
+            }
+            // Reparación defensiva (p. ej. tras importar un respaldo incompleto).
+            IAC_LISTAS.forEach(lista => {
+                const clave = lista === 'recomendaciones' ? 'recomendaciones11' : lista;
+                if (!Array.isArray(datos[clave])) datos[clave] = [];
+            });
+            IAC_CAMPOS.forEach(k => { if (datos[k] === undefined || datos[k] === null) datos[k] = ''; });
+            return datos;
+        }
+
+        // La lista "recomendaciones" del esquema se guarda en 'recomendaciones11' (el campo
+        // 'recomendaciones' es el texto libre del formato anterior y se conserva intacto).
+        function iacClaveLista(lista) { return lista === 'recomendaciones' ? 'recomendaciones11' : lista; }
+
+        // Obtiene (creando si es la primera vez) los datos del informe del curso activo para el periodo
+        // indicado ('t1', 't2' o 'anual'), ya en el formato nuevo.
         function obtenerDatosInformeAcompanamiento(periodo) {
             const curso = db.cursos[db.cursoActivoIndex];
-            if(!curso.informesAcompanamiento) curso.informesAcompanamiento = {};
-            if(!curso.informesAcompanamiento[periodo]) {
-                const labelCurso = (curso.label && curso.paralelo) ? `${curso.label} Paralelo "${curso.paralelo}"` : 'el grado/curso';
-                const periodoTexto = obtenerEtiquetaPeriodoInformeAcomp(periodo);
-                curso.informesAcompanamiento[periodo] = {
-                    fecha: '', numero: '',
-                    funcNombre: db.configGeneral.docente || '', funcTelefono: db.configGeneral.docenteCelular || '', funcCorreo: db.configGeneral.docenteCorreo || '',
-                    dirNombre: obtenerVicerrectorParaCurso(curso).nombre || '', dirTelefono: obtenerVicerrectorParaCurso(curso).celular || '', dirCorreo: obtenerVicerrectorParaCurso(curso).correo || '', dirCargo: 'Vicerrector/a',
-                    asunto: `Informe de acompañamiento de ${labelCurso} correspondiente al ${periodoTexto.replace(/^el /, '')} del año lectivo ${obtenerAnioLectivo(curso) || '-'}.`,
-                    antecedentes: 'En cumplimiento de la planificación institucional y curricular establecida para el presente año lectivo, se desarrollaron diversas actividades académicas, culturales y formativas dirigidas a los estudiantes del grado/curso. Estas acciones se enmarcan en los lineamientos del Ministerio de Educación y en los objetivos institucionales orientados al fortalecimiento de competencias y valores.',
-                    objetivo: `Presentar de manera ordenada y verificable las actividades ejecutadas durante ${periodoTexto}, evidenciando el grado de cumplimiento de la planificación y el aporte de las mismas al desarrollo integral de los estudiantes.`,
-                    alcance: `El presente informe abarca las actividades realizadas con los estudiantes de ${labelCurso} en ${periodoTexto}, considerando acciones de acompañamiento socioemocional, culturales, deportivas y de acompañamiento académico.`,
-                    desarrollo: DESARROLLO_INFORME_ACOMP_DEFECTO.map(d => ({ ...d })),
-                    matricH: '', matricM: '', asistH: '', asistM: '', retirH: '', retirM: '',
-                    observacionesRetiro: '',
-                    conclusiones: CONCLUSIONES_INFORME_ACOMP_DEFECTO,
-                    recomendaciones: RECOMENDACIONES_INFORME_ACOMP_DEFECTO
-                };
+            if (!curso.informesAcompanamiento) curso.informesAcompanamiento = {};
+            if (!curso.informesAcompanamiento[periodo]) curso.informesAcompanamiento[periodo] = {};
+            return migrarInformeAcompanamientoV2(curso.informesAcompanamiento[periodo], curso, periodo);
+        }
+
+        function iacPeriodoActual() { return document.getElementById('sel-informe-acomp-periodo').value; }
+        function iacDatosActuales() { return obtenerDatosInformeAcompanamiento(iacPeriodoActual()); }
+
+        // Valores que se completan solos cuando la celda está vacía.
+        function iacValorAutomatico(campo, curso, periodo) {
+            if (campo === 'seccion') return curso.jornada || '';
+            if (campo === 'fechaJunta') return (curso.actasJunta && curso.actasJunta[periodo] && curso.actasJunta[periodo].fecha) || '';
+            return '';
+        }
+
+        // Tamaño del informe del periodo que se está editando (es lo que ocupa su celda).
+        function iacTamano() {
+            const curso = db.cursos[db.cursoActivoIndex];
+            const informe = curso && curso.informesAcompanamiento && curso.informesAcompanamiento[iacPeriodoActual()];
+            return JSON.stringify(informe || {}).length;
+        }
+
+        function iacAviso(texto) {
+            const el = document.getElementById('iac-aviso-tamano');
+            if (!el) return;
+            el.textContent = texto;
+            el.classList.remove('hidden');
+            clearTimeout(iacAviso._t);
+            iacAviso._t = setTimeout(() => el.classList.add('hidden'), 8000);
+        }
+
+        function iacAplicarCambioSeguro(aplicar, revertir) {
+            aplicar();
+            if (iacTamano() > LIMITE_INFORMES_ACOMP) {
+                revertir();
+                iacAviso(`⚠️ El informe de este periodo llegó al máximo permitido (${LIMITE_INFORMES_ACOMP.toLocaleString('es-EC')} caracteres, para que quepa en una celda de Google Sheets). El último cambio NO se aplicó: acorte algún texto o quite filas que no necesite.`);
+                return false;
             }
-            return curso.informesAcompanamiento[periodo];
+            salvar();
+            return true;
+        }
+
+        function iacAutoAlto(el) {
+            if (!el || !el.scrollHeight) return;
+            el.style.height = 'auto';
+            el.style.height = (el.scrollHeight + 2) + 'px';
+        }
+
+        function iacHtmlTabla(lista, datos, curso) {
+            const esq = IAC_ESQUEMA[lista];
+            const filas = datos[iacClaveLista(lista)];
+            const totalCols = esq.cols.length + (esq.numerar ? 1 : 0) + 1;
+            let h = `<table class="w-full border-collapse text-[11px]"><thead><tr class="bg-slate-200 font-bold uppercase divide-x divide-slate-800 border-b border-slate-800 text-[10px]">`;
+            if (esq.numerar) h += `<td class="p-1 w-8 text-center">N.º</td>`;
+            esq.cols.forEach(c => { h += `<td class="p-1 ${c.w || ''} ${c.num ? 'text-center' : 'text-left'}">${c.t}</td>`; });
+            h += `<td class="no-print w-6"></td></tr></thead><tbody class="divide-y divide-slate-300">`;
+            if (!filas.length) h += `<tr><td colspan="${totalCols}" class="p-2 text-slate-400 italic text-center">Sin registros.</td></tr>`;
+            filas.forEach((fila, idx) => {
+                h += `<tr class="divide-x divide-slate-300 align-top">`;
+                if (esq.numerar) h += `<td class="p-1 text-center font-bold">${idx + 1}</td>`;
+                esq.cols.forEach(c => {
+                    if (c.fija && fila.fijo) { h += `<td class="p-1 ${c.w || ''}">${escaparHtml(fila[c.k])}</td>`; return; }
+                    const guardado = fila[c.k] || '';
+                    const automatico = (!guardado && c.auto) ? c.auto(fila, curso) : '';
+                    const titulo = c.auto && c.auto(fila, curso) !== '' ? 'title="Se calcula solo; puede corregirlo. Si lo deja vacío, vuelve al valor automático."' : '';
+                    h += `<td class="p-0.5 ${c.w || ''}"><textarea rows="1" data-campo="${c.k}" maxlength="${c.ml || 400}" placeholder="${escaparHtml(c.ph || '')}" ${titulo} oninput="iacActualizarCelda('${lista}', ${idx}, '${c.k}', this)" class="iac-autoalto w-full p-1 outline-none resize-none text-[11px] bg-transparent leading-tight ${c.num ? 'text-center' : ''} ${automatico ? 'text-sky-800' : ''}">${escaparHtml(guardado || automatico)}</textarea></td>`;
+                });
+                h += `<td class="p-0.5 text-center no-print"><button onclick="iacQuitarFila('${lista}', ${idx})" class="text-red-600 font-bold" title="Quitar fila">✕</button></td></tr>`;
+            });
+            h += `</tbody></table>`;
+            if (esq.boton) h += `<div class="no-print px-1 py-0.5 flex justify-end"><button onclick="iacAgregarFila('${lista}')" class="bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-bold px-2 py-0.5 rounded">${esq.boton}</button></div>`;
+            return h;
         }
 
         function renderizarInformeAcompanamiento() {
             const curso = db.cursos[db.cursoActivoIndex];
-            const periodo = document.getElementById('sel-informe-acomp-periodo').value;
+            const periodo = iacPeriodoActual();
             const datos = obtenerDatosInformeAcompanamiento(periodo);
-            const labelCurso = (curso.label && curso.paralelo) ? `${curso.label} Paralelo "${curso.paralelo}"` : 'Sin Configurar';
+            const labelCurso = (curso.label && curso.paralelo) ? `${curso.label} "${curso.paralelo}"` : 'Sin Configurar';
+            const nivel = curso.label ? obtenerNivelAcademico(curso.label) : null;
 
             document.getElementById('iaacomp-print-ue').innerText = db.configGeneral.ue || 'UNIDAD EDUCATIVA NO CONFIGURADA';
             document.getElementById('iaacomp-print-amie').innerText = `Código AMIE: ${db.configGeneral.amie || '-'}`;
-            document.getElementById('ia-print-meta').innerText = `${labelCurso} — Informe correspondiente a ${obtenerEtiquetaPeriodoInformeAcomp(periodo)} — Año Lectivo ${obtenerAnioLectivo(curso) || '-'}`;
+            document.getElementById('iac-titulo').innerText = `INFORME DEL DOCENTE TUTOR O DE ACOMPAÑAMIENTO — ${IAC_PERIODOS[periodo] || ''}`;
+            document.getElementById('ia-print-meta').innerText = `${labelCurso} — Año Lectivo ${obtenerAnioLectivo(curso) || '-'}`;
 
-            document.getElementById('ia-fecha').value = datos.fecha || '';
-            document.getElementById('ia-numero').value = datos.numero || '';
-            document.getElementById('ia-func-nombre').value = datos.funcNombre || db.configGeneral.docente || '';
-            document.getElementById('ia-func-telefono').value = datos.funcTelefono || db.configGeneral.docenteCelular || '';
-            document.getElementById('ia-func-correo').value = datos.funcCorreo || db.configGeneral.docenteCorreo || '';
-            document.getElementById('ia-func-cargo').innerText = `Docente de Acompañamiento de ${labelCurso}`;
-            document.getElementById('ia-dir-nombre').value = datos.dirNombre || obtenerVicerrectorParaCurso(curso).nombre || '';
-            document.getElementById('ia-dir-telefono').value = datos.dirTelefono || obtenerVicerrectorParaCurso(curso).celular || '';
-            document.getElementById('ia-dir-correo').value = datos.dirCorreo || obtenerVicerrectorParaCurso(curso).correo || '';
-            document.getElementById('ia-dir-cargo').value = datos.dirCargo || 'Vicerrector/a';
-            document.getElementById('ia-asunto').value = datos.asunto || '';
-            document.getElementById('ia-antecedentes').value = datos.antecedentes || '';
-            document.getElementById('ia-objetivo').value = datos.objetivo || '';
-            document.getElementById('ia-alcance').value = datos.alcance || '';
-            document.getElementById('ia-observaciones-retiro').value = datos.observacionesRetiro || '';
-            document.getElementById('iaacomp-conclusiones').value = datos.conclusiones || '';
-            document.getElementById('iaacomp-recomendaciones').value = datos.recomendaciones || '';
-            document.getElementById('ia-matric-h').value = datos.matricH; document.getElementById('ia-matric-m').value = datos.matricM;
-            document.getElementById('ia-asist-h').value = datos.asistH; document.getElementById('ia-asist-m').value = datos.asistM;
-            document.getElementById('ia-retir-h').value = datos.retirH; document.getElementById('ia-retir-m').value = datos.retirM;
-            calcularTotalesInformeAcomp();
+            // 1. Datos informativos (automáticos)
+            document.getElementById('iac-docente').innerText = formatearNombreFirma(db.configGeneral.docente || 'Docente Sin Configurar');
+            document.getElementById('iac-nivel').innerText = nivel ? nivel.etiqueta : '-';
+            document.getElementById('iac-curso').innerText = labelCurso;
+            document.getElementById('iac-total').innerText = String((curso.estudiantes || []).length);
 
+            // Campos sueltos (con valor automático si están vacíos)
+            document.querySelectorAll('#sec-informe_acompanamiento [data-iac-campo]').forEach(el => {
+                const campo = el.dataset.iacCampo;
+                const guardado = datos[campo] || '';
+                const auto = guardado ? '' : iacValorAutomatico(campo, curso, periodo);
+                el.value = guardado || auto;
+                el.classList.toggle('text-sky-800', !!auto);
+            });
+            iacRevisarGenero(datos, curso);
+
+            // Tablas
+            IAC_LISTAS.forEach(lista => {
+                const cont = document.getElementById(`iac-sec-${lista}`);
+                if (cont) cont.innerHTML = iacHtmlTabla(lista, datos, curso);
+            });
+
+            // 12. Firmas
             document.getElementById('ia-firma-docente').innerText = formatearNombreFirma(db.configGeneral.docente || 'Docente Sin Configurar');
             document.getElementById('ia-firma-vicerrector').innerText = obtenerNombreVicerrectorParaCurso(curso);
-            document.getElementById('ia-cargo-docente-firma').innerText = `Docente de Acompañamiento de ${labelCurso}`;
-            document.getElementById('ia-cargo-vicerrector-firma').innerText = datos.dirCargo || 'Vicerrector/a';
+            document.getElementById('ia-cargo-vicerrector-firma').innerText = '(Vicerrector/a)';
+            document.getElementById('iac-firma-fecha').innerText = datos.fechaElab ? new Date(datos.fechaElab + 'T00:00:00').toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' }) : '';
+            requestAnimationFrame(() => document.querySelectorAll('#sec-informe_acompanamiento .iac-autoalto').forEach(iacAutoAlto));
+        }
 
-            const tbody = document.getElementById('ia-tabla-desarrollo');
-            tbody.innerHTML = '';
-            datos.desarrollo.forEach((fila, idx) => {
-                tbody.innerHTML += `
-                <tr class="divide-x divide-slate-300 align-top">
-                    <td class="p-1 text-center font-bold text-slate-400">${idx+1}</td>
-                    <td class="p-0.5"><textarea oninput="actualizarFilaDesarrolloInforme(${idx}, 'actividad', this.value)" class="w-full p-1 outline-none resize-none text-[11px]" rows="2">${fila.actividad}</textarea></td>
-                    <td class="p-0.5"><textarea oninput="actualizarFilaDesarrolloInforme(${idx}, 'fuente', this.value)" class="w-full p-1 outline-none resize-none text-[11px]" rows="2">${fila.fuente}</textarea></td>
-                    <td class="p-1 text-center no-print"><button onclick="eliminarFilaDesarrolloInforme(${idx})" class="text-red-600 font-bold" title="Eliminar fila">✕</button></td>
-                </tr>`;
+        function iacRevisarGenero(datos, curso) {
+            const el = document.getElementById('iac-aviso-genero');
+            if (!el) return;
+            const m = parseInt(datos.mujeres, 10), h = parseInt(datos.hombres, 10), total = (curso.estudiantes || []).length;
+            const mostrar = !isNaN(m) && !isNaN(h) && m + h !== total;
+            el.classList.toggle('hidden', !mostrar);
+            if (mostrar) el.textContent = `Mujeres + Hombres = ${m + h}, pero la nómina tiene ${total} estudiante(s). Revise los valores.`;
+        }
+
+        // Campo suelto (sección, fechas, textos de cada apartado).
+        function iacCampo(el) {
+            const datos = iacDatosActuales();
+            const campo = el.dataset.iacCampo;
+            const anterior = datos[campo] || '';
+            iacAplicarCambioSeguro(() => { datos[campo] = el.value; }, () => { datos[campo] = anterior; el.value = anterior; });
+            el.classList.remove('text-sky-800');
+            if (el.tagName === 'TEXTAREA') iacAutoAlto(el);
+            if (campo === 'mujeres' || campo === 'hombres') iacRevisarGenero(datos, db.cursos[db.cursoActivoIndex]);
+            if (campo === 'fechaElab') {
+                const f = document.getElementById('iac-firma-fecha');
+                if (f) f.innerText = el.value ? new Date(el.value + 'T00:00:00').toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' }) : '';
+            }
+        }
+
+        function iacActualizarCelda(lista, idx, campo, el) {
+            const datos = iacDatosActuales();
+            const fila = datos[iacClaveLista(lista)][idx];
+            if (!fila) return;
+            const anterior = fila[campo] || '';
+            iacAplicarCambioSeguro(() => { fila[campo] = el.value; }, () => { fila[campo] = anterior; el.value = anterior; });
+            el.classList.remove('text-sky-800');
+            iacAutoAlto(el);
+        }
+
+        function iacAgregarFila(lista) {
+            const datos = iacDatosActuales();
+            const arr = datos[iacClaveLista(lista)];
+            const max = IAC_ESQUEMA[lista].max;
+            if (arr.length >= max) { iacAviso(`⚠️ Esta sección admite como máximo ${max} filas.`); return; }
+            if (!iacAplicarCambioSeguro(() => arr.push(iacFilaVacia(lista)), () => arr.pop())) return;
+            renderizarInformeAcompanamiento();
+        }
+
+        async function iacQuitarFila(lista, idx) {
+            const datos = iacDatosActuales();
+            const arr = datos[iacClaveLista(lista)];
+            const fila = arr[idx];
+            if (!fila) return;
+            const conTexto = Object.keys(fila).some(k => !['fijo', 'clave'].includes(k) && !(fila.fijo && IAC_ESQUEMA[lista].cols.some(c => c.k === k && c.fija)) && String(fila[k] || '').trim());
+            if (conTexto || fila.fijo) {
+                if (!(await mostrarModalConfirmacion('¿Quitar esta fila del informe? Se perderá lo escrito en ella.', 'Quitar'))) return;
+            }
+            arr.splice(idx, 1);
+            salvar();
+            renderizarInformeAcompanamiento();
+        }
+
+        // 4.1: asignaturas con estudiantes en dificultades en este periodo (mismas notas del Boletín y
+        // del Acta de Junta). Inicial y Preparatoria: D+ a E-; 2do-4to EGB: C+ a E-; resto: nota < 7.
+        async function iacCargarDificultades() {
+            const curso = db.cursos[db.cursoActivoIndex];
+            const datos = iacDatosActuales();
+            const periodo = iacPeriodoActual();
+            const esInicialPrep = esCursoInicialOPreparatoria(curso);
+            const umbral = esInicialPrep ? 5 : 7;
+            const cualitativo = esInicialPrep || esGradoCualitativoElemental(curso.label);
+            let matriz;
+            try { matriz = calcularMatrizAsignaturasCurso(curso, periodo); }
+            catch (e) { console.error(e); iacAviso('⚠️ No se pudieron leer las calificaciones de este curso.'); return; }
+            const porAsignatura = matriz.nombresAsignaturas.map((nombre, col) => {
+                const estudiantes = [];
+                matriz.matrizPorEstudiante.forEach(({ est, filas }) => {
+                    const f = filas[col];
+                    if (!f || f.esOVP) return;
+                    const valor = esNotaLetraCualitativa(f.nota) ? LETRA_A_NUMERO_CUALITATIVA[f.nota.trim()] : parseFloat(f.nota);
+                    if (isNaN(valor)) return;
+                    if ((cualitativo ? Math.round(valor) : valor) < umbral) estudiantes.push(`${est.nombre} (${cualitativo ? numeroALetraCualitativa(valor) : valor.toFixed(2)})`);
+                });
+                return { nombre, estudiantes };
+            }).filter(x => x.estudiantes.length).sort((a, b) => b.estudiantes.length - a.estudiantes.length);
+            if (!porAsignatura.length) { iacAviso('ℹ️ En este periodo no hay estudiantes con calificaciones en dificultad (o todavía no hay notas registradas).'); return; }
+            const actual = datos.dificultades;
+            const tieneTexto = actual.some(f => Object.values(f).some(v => String(v || '').trim()));
+            if (tieneTexto && !(await mostrarModalConfirmacion('La tabla 4.1 ya tiene información. ¿Reemplazarla con lo calculado desde las calificaciones?', 'Reemplazar'))) return;
+            const nueva = porAsignatura.map(x => ({ asig: x.nombre, est: `${x.estudiantes.length}: ${x.estudiantes.join(', ')}`, obs: '' }));
+            const anterior = datos.dificultades;
+            if (!iacAplicarCambioSeguro(() => { datos.dificultades = nueva; }, () => { datos.dificultades = anterior; })) return;
+            renderizarInformeAcompanamiento();
+        }
+
+        // 5: cuenta estudiantes según la Asistencia Diaria registrada hasta hoy (sin feriados).
+        // Criterios: atrasos frecuentes = 3 o más atrasos; inasistencias reiteradas = 3 o más faltas sin
+        // justificar; justificadas ocasionales = al menos una falta justificada y menos de 3 sin justificar;
+        // asistencia regular = el resto de la nómina. Retirados no se calcula (no se registra en la app).
+        async function iacSugerirAsistencia() {
+            const curso = db.cursos[db.cursoActivoIndex];
+            const datos = iacDatosActuales();
+            const asistencia = curso.asistenciaDiaria || {};
+            const semanas = Object.keys(asistencia).sort();
+            if (!semanas.length) { iacAviso('ℹ️ Este curso todavía no tiene Asistencia Diaria registrada.'); return; }
+            const hoy = formatearFechaYMD(new Date());
+            const conteo = {};
+            (curso.estudiantes || []).forEach(e => { conteo[e.id] = { F: 0, FJ: 0, A: 0 }; });
+            semanas.forEach(semana => {
+                const lunes = new Date(semana + 'T00:00:00');
+                DIAS_SEMANA_ASISTENCIA.forEach((dia, i) => {
+                    const fecha = new Date(lunes); fecha.setDate(fecha.getDate() + i);
+                    const ymd = formatearFechaYMD(fecha);
+                    if (ymd > hoy || esDiaFeriado(ymd)) return;
+                    Object.keys(conteo).forEach(id => {
+                        const v = asistencia[semana][id] && asistencia[semana][id][dia];
+                        if (v && conteo[id][v] !== undefined) conteo[id][v]++;
+                    });
+                });
             });
+            const valores = Object.values(conteo);
+            const reiteradas = valores.filter(c => c.F >= 3).length;
+            const sugerido = {
+                atrasos: valores.filter(c => c.A >= 3).length,
+                reiteradas,
+                justificadas: valores.filter(c => c.FJ >= 1 && c.F < 3).length,
+                regular: valores.length - reiteradas
+            };
+            const filas = datos.asistencia;
+            const yaTiene = filas.some(f => sugerido[f.clave] !== undefined && String(f.n || '').trim());
+            if (yaTiene && !(await mostrarModalConfirmacion('La tabla 5 ya tiene números. ¿Reemplazarlos con lo calculado desde la Asistencia Diaria?', 'Reemplazar'))) return;
+            const anteriores = filas.map(f => f.n);
+            const ok = iacAplicarCambioSeguro(
+                () => filas.forEach(f => { if (sugerido[f.clave] !== undefined) f.n = String(sugerido[f.clave]); }),
+                () => filas.forEach((f, i) => { f.n = anteriores[i]; }));
+            if (ok) renderizarInformeAcompanamiento();
         }
 
-        function guardarDatosInformeAcompanamiento() {
-            const periodo = document.getElementById('sel-informe-acomp-periodo').value;
-            const datos = obtenerDatosInformeAcompanamiento(periodo);
-            datos.fecha = document.getElementById('ia-fecha').value;
-            datos.numero = document.getElementById('ia-numero').value;
-            datos.funcNombre = document.getElementById('ia-func-nombre').value;
-            datos.funcTelefono = document.getElementById('ia-func-telefono').value;
-            datos.funcCorreo = document.getElementById('ia-func-correo').value;
-            datos.dirNombre = document.getElementById('ia-dir-nombre').value;
-            datos.dirTelefono = document.getElementById('ia-dir-telefono').value;
-            datos.dirCorreo = document.getElementById('ia-dir-correo').value;
-            datos.dirCargo = document.getElementById('ia-dir-cargo').value;
-            datos.asunto = document.getElementById('ia-asunto').value;
-            datos.antecedentes = document.getElementById('ia-antecedentes').value;
-            datos.objetivo = document.getElementById('ia-objetivo').value;
-            datos.alcance = document.getElementById('ia-alcance').value;
-            datos.observacionesRetiro = document.getElementById('ia-observaciones-retiro').value;
-            datos.conclusiones = document.getElementById('iaacomp-conclusiones').value;
-            datos.recomendaciones = document.getElementById('iaacomp-recomendaciones').value;
-            datos.matricH = document.getElementById('ia-matric-h').value;
-            datos.matricM = document.getElementById('ia-matric-m').value;
-            datos.asistH = document.getElementById('ia-asist-h').value;
-            datos.asistM = document.getElementById('ia-asist-m').value;
-            datos.retirH = document.getElementById('ia-retir-h').value;
-            datos.retirM = document.getElementById('ia-retir-m').value;
-            const cargoDocenteEl = document.getElementById('ia-cargo-vicerrector-firma');
-            if(cargoDocenteEl) cargoDocenteEl.innerText = datos.dirCargo || 'Vicerrector/a';
-            salvar();
-        }
-
-        function calcularTotalesInformeAcomp() {
-            const h1 = parseInt(document.getElementById('ia-matric-h').value) || 0, m1 = parseInt(document.getElementById('ia-matric-m').value) || 0;
-            const h2 = parseInt(document.getElementById('ia-asist-h').value) || 0, m2 = parseInt(document.getElementById('ia-asist-m').value) || 0;
-            const h3 = parseInt(document.getElementById('ia-retir-h').value) || 0, m3 = parseInt(document.getElementById('ia-retir-m').value) || 0;
-            document.getElementById('ia-matric-total').innerText = h1 + m1;
-            document.getElementById('ia-asist-total').innerText = h2 + m2;
-            document.getElementById('ia-retir-total').innerText = h3 + m3;
-        }
-
-        function agregarFilaDesarrolloInforme() {
-            const periodo = document.getElementById('sel-informe-acomp-periodo').value;
-            const datos = obtenerDatosInformeAcompanamiento(periodo);
-            datos.desarrollo.push({ actividad: '', fuente: '' });
-            salvar();
-            renderizarInformeAcompanamiento();
-        }
-
-        function eliminarFilaDesarrolloInforme(idx) {
-            const periodo = document.getElementById('sel-informe-acomp-periodo').value;
-            const datos = obtenerDatosInformeAcompanamiento(periodo);
-            datos.desarrollo.splice(idx, 1);
-            salvar();
-            renderizarInformeAcompanamiento();
-        }
-
-        function actualizarFilaDesarrolloInforme(idx, campo, valor) {
-            const periodo = document.getElementById('sel-informe-acomp-periodo').value;
-            const datos = obtenerDatosInformeAcompanamiento(periodo);
-            if(!datos.desarrollo[idx]) return;
-            datos.desarrollo[idx][campo] = valor;
-            salvar();
-        }
+        // Compatibilidad: algunas partes antiguas todavía llaman a esta función.
+        function guardarDatosInformeAcompanamiento() { salvar(); }
 
         function agregarFilaAsistenciaConvocatoria() {
             const periodo = document.getElementById('sel-convocatoria-periodo').value;
@@ -9050,11 +9311,31 @@ ${estilosHtml}
             if(!curso.actasJunta[periodo]) {
                 curso.actasJunta[periodo] = {
                     fecha: '', lugar: '', horaInicio: '', horaFin: '', horaClausura: '', forma: 'ORDINARIA',
-                    ordenDia: {}, // { '0': {si:true/false, no:true/false, obs:''}, ... }
-                    textoInstalacion: '', textoNee: '', textoRefuerzo: '', textoConducta: '', textoAcompanamiento: '', textoResoluciones: ''
+                    ordenDia: {}, // { [clave del punto]: {si:true/false, no:true/false, obs:''}, ... } — ver ORDEN_DEL_DIA_JUNTA
+                    textoInstalacion: '', textoActaAnterior: '', textoNee: '', textoRefuerzo: '', textoConducta: '', textoAcompanamiento: '', textoResoluciones: ''
                 };
             }
-            return curso.actasJunta[periodo];
+            return normalizarOrdenDiaActa(curso.actasJunta[periodo]);
+        }
+
+        // Cada acta (t1, t2, anual, supletorio) se guarda en su PROPIA celda de Google Sheets
+        // (Datos_ActasJunta, fila "idCurso::periodo", máx. 50.000 caracteres — ver Código.gs). Un cambio
+        // que deje el acta del periodo por encima de LIMITE_ACTAS_JUNTA no se aplica: se devuelve lo
+        // anterior y se avisa.
+        const LIMITE_ACTAS_JUNTA = 45000;
+        function actasJuntaCabenEnCelda() {
+            const curso = db.cursos[db.cursoActivoIndex];
+            const periodo = document.getElementById('sel-acta-junta-periodo').value;
+            const acta = curso && curso.actasJunta && curso.actasJunta[periodo];
+            return JSON.stringify(acta || {}).length <= LIMITE_ACTAS_JUNTA;
+        }
+        function avisarTamanoActaJunta() {
+            const el = document.getElementById('acta-junta-aviso-tamano');
+            if (!el) return;
+            el.textContent = `⚠️ El acta de este periodo llegó al máximo permitido (${LIMITE_ACTAS_JUNTA.toLocaleString('es-EC')} caracteres, para que quepa en una celda de Google Sheets). El último cambio NO se aplicó: acorte algún texto.`;
+            el.classList.remove('hidden');
+            clearTimeout(avisarTamanoActaJunta._t);
+            avisarTamanoActaJunta._t = setTimeout(() => el.classList.add('hidden'), 8000);
         }
 
         // Construye, para el periodo elegido, la matriz de notas de TODOS los estudiantes en
@@ -9125,27 +9406,40 @@ ${estilosHtml}
             document.getElementById('acta-junta-texto-acompanamiento').value = datos.textoAcompanamiento;
             document.getElementById('acta-junta-texto-dece').value = datos.textoDece || '';
             document.getElementById('acta-junta-texto-resoluciones').value = datos.textoResoluciones;
+            document.getElementById('acta-junta-texto-acta-anterior').value = datos.textoActaAnterior || '';
             setTimeout(() => autoRedimensionarTextareas(document.getElementById('sec-acta_junta')), 0);
 
-            // --- 2. Orden del día (Sí/No/Observaciones por punto) ---
+            // --- Orden del día (Sí/No/Observaciones por punto) ---
+            const puntosOrden = obtenerOrdenDelDia(periodo);
             const tbodyOrden = document.getElementById('acta-junta-tabla-orden-dia');
             tbodyOrden.innerHTML = '';
-            obtenerOrdenDelDia(periodo).forEach(p => {
+            puntosOrden.forEach(p => {
+                const sangria = p.esSubpunto ? 'pl-6' : '';
                 if(p.esTitulo) {
-                    tbodyOrden.innerHTML += `<tr class="border-b divide-x bg-slate-100"><td class="p-1 w-8 text-center font-bold text-slate-400">${p.etiqueta}</td><td class="p-1 text-left font-bold uppercase" colspan="4">${p.texto}</td></tr>`;
+                    tbodyOrden.innerHTML += `<tr class="border-b divide-x bg-slate-100"><td class="p-1 w-8 text-center font-bold">${p.etiqueta}</td><td class="p-1 text-left font-bold" colspan="4">${p.texto}</td></tr>`;
                     return;
                 }
                 if(!datos.ordenDia[p.idxKey]) datos.ordenDia[p.idxKey] = { si: false, no: false, obs: '' };
                 const od = datos.ordenDia[p.idxKey];
                 tbodyOrden.innerHTML += `
                 <tr class="border-b divide-x">
-                    <td class="p-1 w-8 text-center font-bold text-slate-400">${p.etiqueta}</td>
-                    <td class="p-1 text-left">${p.texto}</td>
-                    <td class="p-1 text-center"><input type="checkbox" ${od.si?'checked':''} onchange="actualizarOrdenDiaActa(${p.idxKey}, 'si', this.checked)" class="w-4 h-4"></td>
-                    <td class="p-1 text-center"><input type="checkbox" ${od.no?'checked':''} onchange="actualizarOrdenDiaActa(${p.idxKey}, 'no', this.checked)" class="w-4 h-4"></td>
-                    <td class="p-0.5"><input type="text" value="${od.obs}" oninput="actualizarOrdenDiaActa(${p.idxKey}, 'obs', this.value)" class="w-full p-1 outline-none text-[10px]"></td>
+                    <td class="p-1 w-8 text-center font-bold ${p.esSubpunto ? 'text-slate-500' : ''}">${p.esSubpunto ? '' : p.etiqueta}</td>
+                    <td class="p-1 text-left ${sangria}">${p.esSubpunto ? `<b>${p.etiqueta}</b> ` : ''}${p.texto}</td>
+                    <td class="p-1 text-center"><input type="checkbox" ${od.si?'checked':''} onchange="actualizarOrdenDiaActa('${p.idxKey}', 'si', this.checked)" class="w-4 h-4"></td>
+                    <td class="p-1 text-center"><input type="checkbox" ${od.no?'checked':''} onchange="actualizarOrdenDiaActa('${p.idxKey}', 'no', this.checked)" class="w-4 h-4"></td>
+                    <td class="p-0.5"><input type="text" maxlength="300" value="${escaparHtml(od.obs || '')}" oninput="actualizarOrdenDiaActa('${p.idxKey}', 'obs', this.value, this)" class="w-full p-1 outline-none text-[10px]"></td>
                 </tr>`;
             });
+            // Títulos del cuerpo del acta: mismo número/literal que en el orden del día; el punto "Lectura y
+            // aprobación del acta anterior" solo aparece desde el 2do Trimestre.
+            const puntoPorClave = {};
+            puntosOrden.forEach(p => { puntoPorClave[p.clave] = p; });
+            document.querySelectorAll('#sec-acta_junta [data-acta-punto]').forEach(el => {
+                const p = puntoPorClave[el.dataset.actaPunto];
+                // Los literales se muestran en minúscula ("a.", "b.", "c.") aunque el título vaya en mayúsculas.
+                if (p) el.innerHTML = `<span class="normal-case">${p.etiqueta}</span> ${escaparHtml(p.texto)}`;
+            });
+            document.querySelectorAll('#sec-acta_junta [data-acta-bloque]').forEach(el => el.classList.toggle('hidden', !puntoPorClave[el.dataset.actaBloque]));
 
             // --- 1. Quórum: se reutiliza la lista de asistencia ya registrada en la Convocatoria del mismo periodo ---
             const convocatoria = obtenerClaveConvocatoria(periodo === 'supletorio' ? 'supletorio' : periodo);
@@ -9312,11 +9606,13 @@ ${estilosHtml}
             const bloqueRefuerzo = document.getElementById('acta-junta-bloque-refuerzo');
             const bloqueAcompanamiento = document.getElementById('acta-junta-bloque-acompanamiento');
             if(esVistaSupletorio) {
-                tituloEl31.innerText = cualJ ? '3.1 Calificaciones del Examen Supletorio (mínimo B- para ser promovido)' : '3.1 Notas del Examen Supletorio (mínimo 7 para ser promovido)';
-                bloqueRefuerzo.classList.add('hidden');
-                bloqueAcompanamiento.classList.add('hidden');
+                tituloEl31.innerText = cualJ ? 'Calificaciones del Examen Supletorio (mínimo B- para ser promovido)' : 'Notas del Examen Supletorio (mínimo 7 para ser promovido)';
+                // 2026-11: el orden del día es el mismo en todos los periodos, así que los puntos
+                // "b" (refuerzo) y de Acompañamiento también se muestran Luego del Supletorio.
+                bloqueRefuerzo.classList.remove('hidden');
+                bloqueAcompanamiento.classList.remove('hidden');
             } else {
-                tituloEl31.innerText = cualJ ? '3.1 Listado de estudiantes con calificación por asignatura de C+ a E-' : '3.1 Listado de estudiantes con calificación por asignatura menor a 7';
+                tituloEl31.innerText = cualJ ? 'Listado de estudiantes con calificación por asignatura de C+ a E-' : 'Listado de estudiantes con calificación por asignatura menor a 7';
                 bloqueRefuerzo.classList.remove('hidden');
                 bloqueAcompanamiento.classList.remove('hidden');
             }
@@ -9332,7 +9628,7 @@ ${estilosHtml}
             const notaIndicacionReprobados = document.getElementById('acta-junta-nota-indicacion-reprobados');
 
             if(esVistaSupletorio) {
-                tituloInformeMateria.innerText = '- Estudiantes Reprobados en el Supletorio';
+                tituloInformeMateria.innerText = 'Estudiantes Reprobados en el Supletorio';
                 tablaNormal.classList.add('hidden');
                 tablaReprobados.classList.remove('hidden');
                 notaIndicacionReprobados.classList.remove('hidden');
@@ -9374,7 +9670,7 @@ ${estilosHtml}
                     tbodyReprobados.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-slate-400 italic">Ningún estudiante quedó reprobado tras el examen supletorio.</td></tr>`;
                 }
             } else {
-                tituloInformeMateria.innerText = '- Informe de docente por asignaturas';
+                tituloInformeMateria.innerText = 'Informe de docente por asignaturas';
                 document.getElementById('acta-junta-th-materia').innerText = 'Materia';
                 document.getElementById('acta-junta-th-promedio').innerText = 'Promedio';
                 document.getElementById('acta-junta-th-casos').innerText = '# Casos';
@@ -9421,7 +9717,7 @@ ${estilosHtml}
         // calcularMatrizAsignaturasCurso (que ya devuelve, para estas materias, el código cualitativo
         // en f.cualitativaOVP gracias a esMateriaCualitativaPorNombre en calcularDatosAsignaturasBoletin).
         function renderizarSeccionesCualitativasActaJunta(curso, nombresAsignaturas, matrizCompleta, periodo) {
-            document.getElementById('acta-junta-titulo-31').innerText = '3.1 Listado de estudiantes con Destreza o Aprendizaje Iniciado (D+, D-, E+, E-)';
+            document.getElementById('acta-junta-titulo-31').innerText = 'Listado de estudiantes con Destreza o Aprendizaje Iniciado (D+, D-, E+, E-)';
             document.getElementById('acta-junta-bloque-refuerzo').classList.remove('hidden');
             document.getElementById('acta-junta-bloque-acompanamiento').classList.remove('hidden');
 
@@ -9471,7 +9767,7 @@ ${estilosHtml}
 
             // "- Informe de docente por Ámbito/Asignatura" (reemplaza "Informe de docente por
             // asignaturas"): Materia | Resultado Predominante (moda) | # Iniciado | % Iniciado.
-            document.getElementById('acta-junta-titulo-informe-materia').innerText = '- Informe de docente por Ámbito/Asignatura';
+            document.getElementById('acta-junta-titulo-informe-materia').innerText = 'Informe de docente por Ámbito/Asignatura';
             document.getElementById('acta-junta-tabla-informe-materia-normal').classList.remove('hidden');
             document.getElementById('acta-junta-tabla-reprobados').classList.add('hidden');
             document.getElementById('acta-junta-nota-indicacion-reprobados').classList.add('hidden');
@@ -9505,11 +9801,18 @@ ${estilosHtml}
             </tr>`;
         }
 
-        function actualizarOrdenDiaActa(idx, campo, valor) {
+        function actualizarOrdenDiaActa(idx, campo, valor, el) {
             const periodo = document.getElementById('sel-acta-junta-periodo').value;
             const datos = obtenerClaveActaJunta(periodo);
             if(!datos.ordenDia[idx]) datos.ordenDia[idx] = { si: false, no: false, obs: '' };
+            const anterior = datos.ordenDia[idx][campo];
             datos.ordenDia[idx][campo] = valor;
+            if (!actasJuntaCabenEnCelda()) {
+                datos.ordenDia[idx][campo] = anterior;
+                if (el) el.value = anterior || '';
+                avisarTamanoActaJunta();
+                return;
+            }
             // Sí/No son mutuamente excluyentes para un mismo punto del orden del día.
             if(campo === 'si' && valor) datos.ordenDia[idx].no = false;
             if(campo === 'no' && valor) datos.ordenDia[idx].si = false;
@@ -9520,6 +9823,8 @@ ${estilosHtml}
         function guardarDatosActaJunta() {
             const periodo = document.getElementById('sel-acta-junta-periodo').value;
             const datos = obtenerClaveActaJunta(periodo);
+            const copiaAnterior = JSON.stringify(datos);
+            datos.textoActaAnterior = document.getElementById('acta-junta-texto-acta-anterior').value;
             datos.fecha = document.getElementById('acta-junta-fecha').value;
             datos.lugar = document.getElementById('acta-junta-lugar').value;
             datos.horaInicio = document.getElementById('acta-junta-hora-inicio').value;
@@ -9535,6 +9840,14 @@ ${estilosHtml}
             datos.textoResoluciones = document.getElementById('acta-junta-texto-resoluciones').value;
             const elIndicacionReprobados = document.getElementById('acta-junta-texto-indicacion-reprobados');
             if(elIndicacionReprobados) datos.textoIndicacionReprobados = elIndicacionReprobados.value;
+            if (!actasJuntaCabenEnCelda()) {
+                // Se devuelve el acta exactamente a como estaba antes de este cambio.
+                Object.keys(datos).forEach(k => { delete datos[k]; });
+                Object.assign(datos, JSON.parse(copiaAnterior));
+                renderizarActaJunta();
+                avisarTamanoActaJunta();
+                return;
+            }
             salvar();
         }
 
@@ -13020,9 +13333,11 @@ ${estilosHtml}
                     add('nucleo', 'Nómina y datos del curso', compactarNucleoParaMedir(slim));
                     add('conducta', 'Registro conductual', d.conducta);
                     add('infoEst', 'Información de estudiantes y directivas', { infoGeneralEstudiantes: d.infoGeneralEstudiantes, directivaPPFF: d.directivaPPFF, directivaEstudiantes: d.directivaEstudiantes });
-                    add('informesAcomp', 'Informes de acompañamiento (todos los periodos)', d.informesAcompanamiento);
-                    add('convocatorias', 'Convocatorias y registros de asistencia a la Junta (todos los periodos)', d.convocatorias);
-                    add('actasJunta', 'Actas de Junta (todos los periodos)', d.actasJunta);
+                    // Una celda por periodo (Código.gs, 2026-11).
+                    const porPeriodo = (grupo, nombre, obj) => Object.keys(obj || {}).forEach(per => add(grupo, `${nombre} ${ETIQUETAS_PERIODO_IA[per] || (per === 'supletorio' ? 'Luego del Supletorio' : per)}`, obj[per]));
+                    porPeriodo('informesAcomp', 'Informe de acompañamiento', d.informesAcompanamiento);
+                    porPeriodo('convocatorias', 'Convocatoria / Registro de asistencia', d.convocatorias);
+                    porPeriodo('actasJunta', 'Acta de Junta', d.actasJunta);
                 } else if (p.accion === 'guardarExterna') {
                     const m = p.materia || '';
                     if (m === 'ingles' || m === 'cultura' || m.trim().toUpperCase() === 'OVP' || esMateriaCualitativaPorNombre(m)) { // misma regla que guardarExterna
