@@ -7412,7 +7412,7 @@ ${estilosHtml}
                         fila.push('Subido');
                         actas.push([labelCurso, docente, etiqueta, acta.fecha || '', acta.lugar || '', acta.horaInicio || '', acta.horaFin || '', acta.horaClausura || '', acta.forma || '',
                             acta.textoInstalacion || '', acta.textoActaAnterior || '', acta.textoRefuerzo || '', acta.textoNee || '', acta.textoDece || '', acta.textoConducta || '', acta.textoAcompanamiento || '', acta.textoResoluciones || '']);
-                        obtenerOrdenDelDia(periodo).forEach(p => {
+                        obtenerOrdenDelDia(periodo, { label: catalogo.grado }).forEach(p => {
                             if (p.esTitulo) return;
                             const od = (acta.ordenDia || {})[p.idxKey];
                             if (!od || !(od.si || od.no || String(od.obs || '').trim())) return;
@@ -8667,10 +8667,20 @@ ${estilosHtml}
         // 1er Trimestre: 1 quórum, 2 rendimiento (a, b, c), 3 DECE, 4 conducta, 5 acompañamiento,
         // 6 resoluciones, 7 clausura. Desde el 2do Trimestre se inserta "2. Lectura y aprobación del acta
         // anterior" y lo demás corre un número (3 rendimiento ... 8 clausura).
-        function obtenerOrdenDelDia(periodo) {
+        //
+        // El punto "b." se redacta según cómo se evalúa el grado (curso = curso del acta; por defecto, el
+        // curso activo): 5to EGB a 3ro BGC "menor a 7 puntos"; 2do a 4to EGB "de C+ a E-";
+        // Inicial y Preparatoria "de D+ a E-" (destreza o aprendizaje iniciado).
+        function obtenerOrdenDelDia(periodo, curso) {
+            const cursoActa = curso || (db.cursos && db.cursos[db.cursoActivoIndex]) || {};
+            const rangoDificultad = esCursoInicialOPreparatoria(cursoActa) ? 'de D+ a E-'
+                : (esGradoCualitativoElemental(cursoActa.label) ? 'de C+ a E-' : 'menor a 7 puntos');
             let numero = 0, literal = 0;
             return ORDEN_DEL_DIA_JUNTA
                 .filter(p => !(p.soloDesdeT2 && periodo === 't1'))
+                .map(p => p.clave === 'refuerzo'
+                    ? { ...p, texto: `Actividades desarrolladas e informes de alerta temprana, planes de refuerzo o mejora de estudiantes con calificación ${rangoDificultad}.` }
+                    : p)
                 .map(p => {
                     if (p.esSubpunto) {
                         literal++;
@@ -9371,7 +9381,9 @@ ${estilosHtml}
             if(!selPeriodo) return;
 
             // Ámbitos (Inicial/Preparatoria) no tienen examen supletorio.
-            const esAmbitosActa = esCursoDeAmbitosCualitativo(curso);
+            // 2026-11: Inicial y Preparatoria se detectan por el GRADO (no solo por el nombre "Ámbitos..."
+            // de la asignatura), para que su acta use siempre la escala cualitativa (D+ a E-), nunca "menor a 7".
+            const esAmbitosActa = esCursoInicialOPreparatoria(curso);
             const optSupletorioActa = document.getElementById('opt-acta-junta-supletorio');
             if(optSupletorioActa) optSupletorioActa.classList.toggle('hidden', esAmbitosActa);
             if(esAmbitosActa && selPeriodo.value === 'supletorio') selPeriodo.value = 'anual';
@@ -9741,7 +9753,10 @@ ${estilosHtml}
             matrizCompleta.forEach((fila, idx) => {
                 let casosEstudiante = 0;
                 let celdas = fila.filas.map((f, colIdx) => {
-                    const cod = f.cualitativaOVP || '';
+                    // Código cualitativo de la asignatura; si alguna se guardó con nota numérica, se
+                    // muestra su letra equivalente (A+ a E-).
+                    const notaNum = (f.nota !== '' && f.nota !== undefined && !isNaN(parseFloat(f.nota))) ? parseFloat(f.nota) : null;
+                    const cod = f.cualitativaOVP || (notaNum !== null ? obtenerEscalaAlfabetica(notaNum) : '');
                     if (cod && cod !== '-') {
                         conteoValidosPorAsignatura[colIdx]++;
                         modaPorAsignatura[colIdx][cod] = (modaPorAsignatura[colIdx][cod] || 0) + 1;
