@@ -2292,8 +2292,10 @@
                         <option value="t1" id="opt-refuerzo-t1">1er Trimestre (Menor a 7)</option>
                         <option value="t2" id="opt-refuerzo-t2">2do Trimestre (Menor a 7)</option>
                         <option value="t3" id="opt-refuerzo-t3">3er Trimestre (Menor a 7)</option>
+                        <option value="libre">📝 Plan libre (cualquier estudiante, en cualquier momento)</option>
                     </select>
-                    <h3 class="text-xs font-bold text-red-600 uppercase mb-2">⚠️ Alumnos que requieren plan:</h3>
+                    <p id="refuerzo-ayuda-libre" class="hidden text-[11px] text-slate-600 bg-white border rounded p-2 mb-3">Cree un plan de refuerzo para cualquier estudiante cuando lo necesite, sin esperar al cierre del trimestre. Cada estudiante puede tener varios planes libres.</p>
+                    <h3 class="text-xs font-bold text-red-600 uppercase mb-2" id="refuerzo-titulo-lista">⚠️ Alumnos que requieren plan:</h3>
                     <div id="lista-alertas" class="space-y-1 max-h-72 overflow-y-auto"></div>
                 </div>
 
@@ -2317,7 +2319,16 @@
                             <div><b>Rendimiento / Calificación:</b> <span id="plan-nota" class="font-bold">-</span></div>
                         </div>
 
+                        <div id="refuerzo-aviso-tamano" class="hidden no-print bg-red-100 border border-red-700 text-red-800 font-bold text-[11px] px-2 py-1 rounded"></div>
+
                         <div class="space-y-3">
+                            <!-- Solo en planes libres (2026-11): motivo por el que se abre el plan fuera del trimestre. -->
+                            <div id="plan-bloque-motivo" class="hidden border-2 border-slate-700 rounded overflow-hidden">
+                                <div class="grid grid-cols-[110px_1fr]">
+                                    <div class="doc-seccion-titulo text-[10px] p-2 flex items-center">Motivo:</div>
+                                    <textarea id="plan-motivo" maxlength="1500" oninput="guardarTextoRefuerzo('motivo', this.value)" class="w-full p-2 outline-none text-[11px] resize-none h-12" placeholder="Ej.: Dificultades detectadas en la evaluación formativa de la unidad 3."></textarea>
+                                </div>
+                            </div>
                             <div class="border-2 border-slate-700 rounded overflow-hidden">
                                 <div class="grid grid-cols-[110px_1fr]">
                                     <div class="doc-seccion-titulo text-[10px] p-2 flex items-center">Objetivo:</div>
@@ -2329,6 +2340,7 @@
                                 <label class="block font-bold text-slate-700 uppercase text-[10px]">📋 Destrezas a Reforzar (máx. 5):</label>
                                 <div class="flex gap-1">
                                     <button onclick="agregarFilaDestrezaRefuerzo()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-bold px-2 py-1 rounded">➕ Agregar Destreza</button>
+                                    <button id="btn-eliminar-plan-libre" onclick="eliminarPlanLibreRefuerzo()" class="hidden bg-red-700 hover:bg-red-800 text-white text-[10px] font-bold px-2 py-1 rounded">🗑️ Eliminar este plan libre</button>
                                 </div>
                             </div>
                             <div class="overflow-x-auto border-2 border-slate-700 rounded">
@@ -3422,7 +3434,17 @@
                 }
                 if (esCualitativoAmbitos) {
                     const propioCualitativo = materiasGenericas[materiaNombre] && materiasGenericas[materiaNombre][est.id];
-                    calificacionesAmbitos[est.id] = propioCualitativo || { t1: {}, t2: {}, t3: {} };
+                    // 2026-11: Planes de Refuerzo e Informe NEE de Inicial/Preparatoria viajan junto a las
+                    // calificaciones de Ámbitos (Código.gs los separa a Datos_Refuerzo/Datos_NEE); aquí se
+                    // apartan para que vivan en curso.textosRefuerzo / curso.informesNEE como en el resto.
+                    if (propioCualitativo && typeof propioCualitativo === 'object') {
+                        const { textoRefuerzo, informeNEE, ...soloAmbitos } = propioCualitativo;
+                        if (textoRefuerzo) textosRefuerzo[est.id] = textoRefuerzo;
+                        if (informeNEE) informesNEE[est.id] = informeNEE;
+                        calificacionesAmbitos[est.id] = soloAmbitos;
+                    } else {
+                        calificacionesAmbitos[est.id] = { t1: {}, t2: {}, t3: {} };
+                    }
                     calificaciones[est.id] = derivarCalificacionesDesdeNotaSimple({ t1: '', t2: '', t3: '' });
                     supletorios[est.id] = '';
                     return;
@@ -3785,7 +3807,13 @@
                         return;
                     }
                     if (esCualitativoSesion) {
-                        datosExterna[est.id] = (curso.calificacionesAmbitos && curso.calificacionesAmbitos[est.id]) || { t1: {}, t2: {}, t3: {} };
+                        // 2026-11: se envían también el Plan de Refuerzo y el Informe NEE del estudiante (antes
+                        // no se enviaban y se perdían al cerrar sesión). Código.gs los guarda aparte.
+                        const ambitos = (curso.calificacionesAmbitos && curso.calificacionesAmbitos[est.id]) || { t1: {}, t2: {}, t3: {} };
+                        datosExterna[est.id] = Object.assign({}, ambitos, {
+                            textoRefuerzo: (curso.textosRefuerzo && curso.textosRefuerzo[est.id]) || null,
+                            informeNEE: (curso.informesNEE && curso.informesNEE[est.id]) || null
+                        });
                         return;
                     }
                     const califs = curso.calificaciones[est.id];
@@ -6734,7 +6762,11 @@ ${estilosHtml}
                 Object.keys(planesEst).forEach(periodo => {
                     const p = planesEst[periodo];
                     if (!p || (!p.objetivo && !p.observaciones && (!p.destrezas || !p.destrezas.length))) return;
-                    bloques.push({ titulo: `${e.nombre} — ${etiquetasPeriodo[periodo] || periodo}`, campos: [
+                    const etiqueta = esPlanLibreRefuerzo(periodo)
+                        ? `Plan libre${p.creado ? ' (' + formatearFechaCortaRefuerzo(p.creado) + ')' : ''}`
+                        : (etiquetasPeriodo[periodo] || periodo);
+                    bloques.push({ titulo: `${e.nombre} — ${etiqueta}`, campos: [
+                        ...(esPlanLibreRefuerzo(periodo) ? [['Motivo', p.motivo || '-']] : []),
                         ['Objetivo', p.objetivo || '-'],
                         ['Destrezas / Estrategias', (p.destrezas || []).map(d => `• ${d.destreza || '(sin definir)'} — Estrategia: ${d.estrategia || '-'} — Recursos: ${d.recursos || '-'} — Evaluación: ${d.evaluacion || '-'}`).join('\n')],
                         ['Observaciones', p.observaciones || '-']
@@ -13355,8 +13387,18 @@ ${estilosHtml}
                     porPeriodo('actasJunta', 'Acta de Junta', d.actasJunta);
                 } else if (p.accion === 'guardarExterna') {
                     const m = p.materia || '';
-                    if (m === 'ingles' || m === 'cultura' || m.trim().toUpperCase() === 'OVP' || esMateriaCualitativaPorNombre(m)) { // misma regla que guardarExterna
+                    if (m === 'ingles' || m === 'cultura' || m.trim().toUpperCase() === 'OVP') { // misma regla que guardarExterna
                         add('materia', `Calificaciones de ${m || 'la asignatura'}`, d);
+                    } else if (esMateriaCualitativaPorNombre(m)) {
+                        // Ámbitos/Preparatoria (2026-11): Código.gs separa refuerzo y NEE, igual que abajo.
+                        const ambitos = {};
+                        Object.keys(d).forEach(estId => {
+                            const { textoRefuerzo, informeNEE, ...resto } = d[estId] || {};
+                            ambitos[estId] = resto;
+                            if (textoRefuerzo && !esVacioProfundoNube(textoRefuerzo)) add('refuerzo', `Planes de refuerzo de ${nombreEst(estId)}`, textoRefuerzo);
+                            if (informeNEE && !esVacioProfundoNube(informeNEE)) add('nee', `Informe NEE de ${nombreEst(estId)}`, informeNEE);
+                        });
+                        add('materia', `Calificaciones de ${m}`, ambitos);
                     } else {
                         const calif = {};
                         Object.keys(d).forEach(estId => {
@@ -15064,6 +15106,18 @@ ${estilosHtml}
                 if (opt) opt.innerText = `${{t1:'1er',t2:'2do',t3:'3er'}[p]} Trimestre (${esAmbitosRefuerzo ? 'D+, D-, E+, E-' : (esCualElemRefuerzo ? 'C+ a E-' : 'Menor a 7')})`;
             });
 
+            // 2026-11: "Plan libre" — cualquier estudiante, en cualquier momento (los bloques por
+            // trimestre de arriba no cambian).
+            const esLibre = periodo === 'libre';
+            document.getElementById('refuerzo-ayuda-libre').classList.toggle('hidden', !esLibre);
+            document.getElementById('refuerzo-titulo-lista').innerText = esLibre ? '📝 Estudiantes del curso (planes libres):' : '⚠️ Alumnos que requieren plan:';
+            if (esLibre) {
+                if (periodoPlanActivo && !esPlanLibreRefuerzo(periodoPlanActivo)) limpiarFichaPlan();
+                renderizarListaPlanesLibres(curso);
+                return;
+            }
+            if (periodoPlanActivo && esPlanLibreRefuerzo(periodoPlanActivo)) limpiarFichaPlan();
+
             let alumnosCriticos = [];
 
             if (esAmbitosRefuerzo) {
@@ -15153,6 +15207,113 @@ ${estilosHtml}
             document.getElementById('plan-firma-docente').innerText = formatearNombreFirma(db.configGeneral.docente || 'Docente Sin Configurar');
             document.getElementById('plan-firma-coordinador').value = '';
             document.getElementById('plan-firma-vicerrector').innerText = obtenerNombreVicerrectorParaCurso(curso);
+            document.getElementById('plan-bloque-motivo').classList.add('hidden');
+            document.getElementById('plan-motivo').value = '';
+            document.getElementById('btn-eliminar-plan-libre').classList.add('hidden');
+        }
+
+        // ═══════════════ Planes de refuerzo LIBRES (2026-11) ═══════════════
+        // Además de los planes por trimestre (t1/t2/t3), el/la docente puede abrir un plan para cualquier
+        // estudiante en cualquier momento. Se guardan junto a los demás planes del estudiante, en
+        // curso.textosRefuerzo[estId]['libre_<código>'] = { objetivo, destrezas, observaciones, motivo,
+        // creado, coordinadorManual }. Los planes por trimestre no cambian.
+        // Todos los planes de un estudiante en una asignatura viajan en UNA celda de Google Sheets
+        // (Datos_Refuerzo, una fila por estudiante): LIMITE_REFUERZO_POR_ESTUDIANTE la protege.
+        const LIMITE_REFUERZO_POR_ESTUDIANTE = 45000;
+        function esPlanLibreRefuerzo(clave) { return typeof clave === 'string' && clave.indexOf('libre_') === 0; }
+
+        function planesLibresDeEstudiante(curso, estId) {
+            const planes = (curso.textosRefuerzo && curso.textosRefuerzo[estId]) || {};
+            return Object.keys(planes).filter(esPlanLibreRefuerzo)
+                .map(clave => ({ clave, creado: (planes[clave] && planes[clave].creado) || '' }))
+                .sort((a, b) => (a.creado + a.clave).localeCompare(b.creado + b.clave));
+        }
+
+        function formatearFechaCortaRefuerzo(ymd) {
+            return ymd ? new Date(ymd + 'T00:00:00').toLocaleDateString('es-EC') : '';
+        }
+
+        // Calificación más reciente del estudiante (3er, 2do o 1er Trimestre), según cómo se evalúa el grado:
+        // Inicial/Preparatoria con su resumen de Ámbitos, 2do-4to EGB con letra, 5to EGB a 3ro BGC con nota.
+        function notaActualRefuerzo(curso, estId) {
+            const nombres = { t3: '3er Trimestre', t2: '2do Trimestre', t1: '1er Trimestre' };
+            for (const p of ['t3', 't2', 't1']) {
+                if (esCursoInicialOPreparatoria(curso) && curso.calificacionesAmbitos && curso.calificacionesAmbitos[estId]) {
+                    const cod = calcularResumenCualitativoEstudiante(curso, estId, p);
+                    if (cod) {
+                        const grupo = (ESCALA_DESTREZAS_CUALITATIVA.find(e => e.val === cod) || {}).grupo || '';
+                        return { corto: cod, largo: `${cod} (${grupo}) — ${nombres[p]}` };
+                    }
+                    continue;
+                }
+                const califs = curso.calificaciones && curso.calificaciones[estId];
+                const nota = califs && califs[p] ? calcularTrimestre(califs[p]).notaFinal : '';
+                if (nota === '' || nota === undefined) continue;
+                if (esCursoCualitativoElemental(curso) || esCursoInicialOPreparatoria(curso)) {
+                    const letra = numeroALetraCualitativa(nota);
+                    return { corto: letra, largo: `${letra} (${nivelDestrezaCualitativa(nota).largo}) — ${nombres[p]}` };
+                }
+                return { corto: parseFloat(nota).toFixed(2), largo: `${parseFloat(nota).toFixed(2)} / 10.00 (${obtenerEquivalenciaRGLOEI(nota).desc}) — ${nombres[p]}` };
+            }
+            return { corto: '—', largo: 'Sin calificaciones registradas todavía' };
+        }
+
+        function renderizarListaPlanesLibres(curso) {
+            const lista = document.getElementById('lista-alertas');
+            if (!lista) return;
+            const estudiantes = [...(curso.estudiantes || [])].sort((a, b) => a.nombre.localeCompare(b.nombre));
+            if (!estudiantes.length) { lista.innerHTML = '<p class="text-xs text-slate-400 p-2 bg-slate-100 rounded text-center">Este curso todavía no tiene estudiantes.</p>'; return; }
+            lista.innerHTML = estudiantes.map(est => {
+                const nota = notaActualRefuerzo(curso, est.id);
+                const planes = planesLibresDeEstudiante(curso, est.id);
+                const botonesPlanes = planes.map((p, i) => {
+                    const activo = estudiantePlanActivoId === est.id && periodoPlanActivo === p.clave;
+                    return `<button onclick="cargarPlanEstudiante('${est.id}', '${p.clave}')" class="text-[10px] px-1.5 py-0.5 rounded border ${activo ? 'bg-emerald-700 text-white border-emerald-800' : 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'}">Plan ${i + 1}${p.creado ? ' · ' + formatearFechaCortaRefuerzo(p.creado) : ''}</button>`;
+                }).join('');
+                return `<div class="w-full text-xs p-2 rounded border bg-white border-slate-200">
+                    <div class="flex justify-between items-center gap-2">
+                        <span class="truncate uppercase font-bold text-slate-700">${escaparHtml(est.nombre)}</span>
+                        <b class="font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded" title="${escaparHtml(nota.largo)}">${escaparHtml(nota.corto)}</b>
+                    </div>
+                    <div class="flex flex-wrap gap-1 mt-1">${botonesPlanes}
+                        <button onclick="crearPlanLibreRefuerzo('${est.id}')" class="text-[10px] px-1.5 py-0.5 rounded border border-sky-300 bg-sky-50 text-sky-800 hover:bg-sky-100 font-bold">➕ Nuevo plan</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function refuerzoCabeEnCelda(estId) {
+            const curso = db.cursos[db.cursoActivoIndex];
+            return JSON.stringify((curso.textosRefuerzo && curso.textosRefuerzo[estId]) || {}).length <= LIMITE_REFUERZO_POR_ESTUDIANTE;
+        }
+        function avisarTamanoRefuerzo() {
+            const el = document.getElementById('refuerzo-aviso-tamano');
+            if (!el) return;
+            el.textContent = `⚠️ Los planes de refuerzo de este estudiante llegaron al máximo permitido (${LIMITE_REFUERZO_POR_ESTUDIANTE.toLocaleString('es-EC')} caracteres entre todos sus planes, para que quepan en una celda de Google Sheets). El último cambio NO se aplicó: acorte algún texto o elimine un plan libre que ya no necesite.`;
+            el.classList.remove('hidden');
+            clearTimeout(avisarTamanoRefuerzo._t);
+            avisarTamanoRefuerzo._t = setTimeout(() => el.classList.add('hidden'), 8000);
+        }
+
+        function crearPlanLibreRefuerzo(estId) {
+            const curso = db.cursos[db.cursoActivoIndex];
+            if (!curso.textosRefuerzo) curso.textosRefuerzo = {};
+            if (!curso.textosRefuerzo[estId]) curso.textosRefuerzo[estId] = {};
+            const clave = 'libre_' + Date.now().toString(36);
+            curso.textosRefuerzo[estId][clave] = normalizarTextoRefuerzo({ objetivo: '', destrezas: [], observaciones: '', motivo: '', creado: formatearFechaYMD(new Date()) });
+            if (!refuerzoCabeEnCelda(estId)) { delete curso.textosRefuerzo[estId][clave]; avisarTamanoRefuerzo(); return; }
+            salvar();
+            cargarPlanEstudiante(estId, clave);
+        }
+
+        async function eliminarPlanLibreRefuerzo() {
+            if (!estudiantePlanActivoId || !esPlanLibreRefuerzo(periodoPlanActivo)) return;
+            if (!(await mostrarModalConfirmacion('¿Eliminar este plan de refuerzo libre? Se perderá todo lo escrito en él.', 'Eliminar'))) return;
+            const curso = db.cursos[db.cursoActivoIndex];
+            delete curso.textosRefuerzo[estudiantePlanActivoId][periodoPlanActivo];
+            salvar();
+            limpiarFichaPlan();
+            renderizarListaPlanesLibres(curso);
         }
 
         function cargarPlanEstudiante(estId, periodo, nota) {
@@ -15161,11 +15322,16 @@ ${estilosHtml}
             const curso = db.cursos[db.cursoActivoIndex];
             const est = curso.estudiantes.find(e => e.id === estId);
             if(!est) return;
+            const esLibre = esPlanLibreRefuerzo(periodo);
 
             let labelPeriodo = 'Cuadro Anual Consolidado';
             if(periodo === 't1') labelPeriodo = 'Primer Trimestre';
             if(periodo === 't2') labelPeriodo = 'Segundo Trimestre';
             if(periodo === 't3') labelPeriodo = 'Tercer Trimestre';
+            if(esLibre) {
+                const creado = curso.textosRefuerzo && curso.textosRefuerzo[estId] && curso.textosRefuerzo[estId][periodo] && curso.textosRefuerzo[estId][periodo].creado;
+                labelPeriodo = `Plan de refuerzo libre (fuera del cierre de trimestre)${creado ? ' — elaborado el ' + formatearFechaCortaRefuerzo(creado) : ''}`;
+            }
 
             document.getElementById('plan-institucion').innerText = db.configGeneral.ue || "UNIDAD EDUCATIVA";
             document.getElementById('plan-amie').innerText = `Código AMIE: ${db.configGeneral.amie || '-'}`;
@@ -15176,7 +15342,9 @@ ${estilosHtml}
             document.getElementById('plan-anio').innerText = obtenerAnioLectivo(curso) || '-';
             document.getElementById('plan-estudiante').innerText = est.nombre;
             document.getElementById('plan-nee').innerText = est.nee;
-            document.getElementById('plan-nota').innerText = esCursoDeAmbitosCualitativo(curso)
+            document.getElementById('plan-nota').innerText = esLibre
+                ? notaActualRefuerzo(curso, estId).largo
+                : esCursoDeAmbitosCualitativo(curso)
                 ? `${nota} (${(ESCALA_DESTREZAS_CUALITATIVA.find(e => e.val === nota) || {}).grupo || 'Destreza o aprendizaje iniciado'})`
                 : (esCursoCualitativoElemental(curso)
                     ? `${nota} (${nivelDestrezaCualitativa(nota).largo})`
@@ -15195,6 +15363,10 @@ ${estilosHtml}
             inputCoordPlanB.value = txt.coordinadorManual || '';
             document.getElementById('plan-objetivo').value = txt.objetivo;
             document.getElementById('plan-observaciones').value = txt.observaciones;
+            document.getElementById('plan-bloque-motivo').classList.toggle('hidden', !esLibre);
+            document.getElementById('plan-motivo').value = esLibre ? (txt.motivo || '') : '';
+            document.getElementById('btn-eliminar-plan-libre').classList.toggle('hidden', !esLibre);
+            if (esLibre) renderizarListaPlanesLibres(curso); // resalta el plan abierto
             renderizarTablaDestrezasRefuerzo();
             setTimeout(() => autoRedimensionarTextareas(document.getElementById('sec-refuerzo')), 0);
         }
@@ -15228,6 +15400,7 @@ ${estilosHtml}
                 return;
             }
             txt.destrezas.push({ destreza: '', estrategia: '', recursos: '', evaluacion: '' });
+            if (!refuerzoCabeEnCelda(estudiantePlanActivoId)) { txt.destrezas.pop(); avisarTamanoRefuerzo(); return; }
             salvar();
             renderizarTablaDestrezasRefuerzo();
         }
@@ -15246,7 +15419,14 @@ ${estilosHtml}
             const curso = db.cursos[db.cursoActivoIndex];
             const txt = curso.textosRefuerzo[estudiantePlanActivoId][periodoPlanActivo];
             if(!txt.destrezas[idx]) return;
+            const anterior = txt.destrezas[idx][campo];
             txt.destrezas[idx][campo] = valor;
+            if (!refuerzoCabeEnCelda(estudiantePlanActivoId)) {
+                txt.destrezas[idx][campo] = anterior;
+                renderizarTablaDestrezasRefuerzo();
+                avisarTamanoRefuerzo();
+                return;
+            }
             salvar();
         }
 
@@ -15255,7 +15435,16 @@ ${estilosHtml}
             const curso = db.cursos[db.cursoActivoIndex];
             if(!curso.textosRefuerzo[estudiantePlanActivoId]) curso.textosRefuerzo[estudiantePlanActivoId] = {};
             if(!curso.textosRefuerzo[estudiantePlanActivoId][periodoPlanActivo]) curso.textosRefuerzo[estudiantePlanActivoId][periodoPlanActivo] = normalizarTextoRefuerzo();
-            curso.textosRefuerzo[estudiantePlanActivoId][periodoPlanActivo][campo] = valor;
+            const plan = curso.textosRefuerzo[estudiantePlanActivoId][periodoPlanActivo];
+            const anterior = plan[campo];
+            plan[campo] = valor;
+            if (!refuerzoCabeEnCelda(estudiantePlanActivoId)) {
+                plan[campo] = anterior;
+                const idCampo = { objetivo: 'plan-objetivo', observaciones: 'plan-observaciones', motivo: 'plan-motivo', coordinadorManual: 'plan-firma-coordinador' }[campo];
+                if (idCampo) document.getElementById(idCampo).value = anterior || '';
+                avisarTamanoRefuerzo();
+                return;
+            }
             salvar();
         }
 
