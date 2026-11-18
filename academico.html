@@ -1627,8 +1627,16 @@
                 <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">6. Identificación de Alertas Tempranas</div>
                 <div id="ia2-sec-alertas" class="border-b border-slate-800"></div>
 
-                <!-- 6.1 CONSOLIDACIÓN DE ALERTAS -->
-                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">6.1. Consolidación de Alertas</div>
+                <!-- 6.1 ALERTAS SUPERADAS (2026-11-18) -->
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">6.1. Alertas Superadas durante el Trimestre</div>
+                <div id="ia2-sec-alertasSup" class="border-b border-slate-800"></div>
+
+                <!-- 6.2 ALERTAS NO SUPERADAS (2026-11-18) -->
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">6.2. Alertas No Superadas durante el Trimestre</div>
+                <div id="ia2-sec-alertasNoSup" class="border-b border-slate-800"></div>
+
+                <!-- 6.3 CONSOLIDACIÓN DE ALERTAS (antes 6.1; mismos datos 'consolidado') -->
+                <div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">6.3. Consolidación de Alertas</div>
                 <div id="ia2-sec-consolidado" class="border-b border-slate-800"></div>
 
                 <!-- 7. REFUERZO PEDAGÓGICO Y ACOMPAÑAMIENTO -->
@@ -7511,12 +7519,12 @@ ${estilosHtml}
                     [...baseCols, 'Estado', 'Escala', 'Estudiantes con nota', 'Promedio del curso', 'DA / Alcanzado', 'A / En proceso', 'PA / Iniciado', 'NA', '3. Dificultades', '4. Estudiantes con NEE'],
                     resumen, [...baseAnchos, 14, 12, 11, 10, 10, 10, 10, 6, 36, 36]);
                 excelHojaReporteDocumentos(XLSXE, wb, usados, 'No han subido', titulo('QUIÉNES NO HAN SUBIDO'), [...baseCols, 'Periodo'], faltantes, [...baseAnchos, 24]);
-                const nombresHoja = { cumplimiento: '5 Cumplimiento', resultados: '5.1 Resultados', alertas: '6 Alertas', refuerzoPed: '7 Refuerzo', nee: '8 NEE', compromisos: '10 Compromisos' };
-                const titulosSeccion = { cumplimiento: '5. CUMPLIMIENTO DE LA PLANIFICACIÓN CURRICULAR', resultados: '5.1 RESULTADOS POR APRENDIZAJES / DESTREZAS', alertas: '6. IDENTIFICACIÓN DE ALERTAS TEMPRANAS', refuerzoPed: '7. REFUERZO PEDAGÓGICO Y ACOMPAÑAMIENTO', nee: '8. ATENCIÓN A LAS NEE Y AJUSTES RAZONABLES', compromisos: '10. RECOMENDACIONES Y COMPROMISOS PARA LA JUNTA' };
+                const nombresHoja = { cumplimiento: '5 Cumplimiento', resultados: '5.1 Resultados', alertas: '6 Alertas', alertasSup: '6.1 Alertas superadas', alertasNoSup: '6.2 Alertas no superadas', refuerzoPed: '7 Refuerzo', nee: '8 NEE', compromisos: '10 Compromisos' };
+                const titulosSeccion = { cumplimiento: '5. CUMPLIMIENTO DE LA PLANIFICACIÓN CURRICULAR', resultados: '5.1 RESULTADOS POR APRENDIZAJES / DESTREZAS', alertas: '6. IDENTIFICACIÓN DE ALERTAS TEMPRANAS', alertasSup: '6.1. ALERTAS SUPERADAS DURANTE EL TRIMESTRE', alertasNoSup: '6.2. ALERTAS NO SUPERADAS DURANTE EL TRIMESTRE', refuerzoPed: '7. REFUERZO PEDAGÓGICO Y ACOMPAÑAMIENTO', nee: '8. ATENCIÓN A LAS NEE Y AJUSTES RAZONABLES', compromisos: '10. RECOMENDACIONES Y COMPROMISOS PARA LA JUNTA' };
                 const hojaLista = (lista) => excelHojaReporteDocumentos(XLSXE, wb, usados, nombresHoja[lista], titulo(titulosSeccion[lista]),
                     [...baseCols, 'N.º', ...IA_ESQUEMA[lista].cols.map(c => c.t)], hojas[lista], [...baseAnchos, 5, ...IA_ESQUEMA[lista].cols.map(() => 28)]);
-                ['cumplimiento', 'resultados', 'alertas'].forEach(hojaLista);
-                excelHojaReporteDocumentos(XLSXE, wb, usados, '6.1 Consolidación', titulo('6.1. CONSOLIDACIÓN DE ALERTAS'),
+                ['cumplimiento', 'resultados', 'alertas', 'alertasSup', 'alertasNoSup'].forEach(hojaLista);
+                excelHojaReporteDocumentos(XLSXE, wb, usados, '6.3 Consolidación', titulo('6.3. CONSOLIDACIÓN DE ALERTAS'),
                     [...baseCols, ...ITEMS_CONSOLIDADO_IA.map(([, t]) => t)], hojas.consolidado, [...baseAnchos, 18, 18, 18, 18, 18]);
                 ['refuerzoPed', 'nee'].forEach(hojaLista);
                 excelHojaReporteDocumentos(XLSXE, wb, usados, '9 Conclusiones', titulo('9. CONCLUSIONES DEL DOCENTE'), [...baseCols, 'N.º', 'Conclusión'], hojas.conclusiones, [...baseAnchos, 5, 70]);
@@ -13630,6 +13638,22 @@ ${estilosHtml}
                 { k: 'co', t: 'Comunicación al representante', ph: 'Ej.: Notificación enviada; entrevista por coordinar.' },
                 { k: 'ac', t: 'Acción inicial', ph: 'Ej.: Ficha guiada y tutoría.' }
             ] },
+            // 2026-11-18: 6.1 Alertas superadas y 6.2 Alertas no superadas (la Consolidación pasa a 6.3).
+            // calif: true -> el texto guía cambia según el nivel (letras de Inicial a 4to EGB, números de
+            // 5to EGB a 3ro BGC).
+            alertasSup: { max: 40, numerar: true, boton: '➕ Agregar estudiante', cols: [
+                { k: 'es', t: 'Estudiante', w: 'w-[18%]', ml: 150, ph: 'Ej.: A. C.' },
+                { k: 'ci', t: 'Calificación inicial', w: 'w-[13%]', ml: 20, centro: true, calif: true, ph: 'Ej.: 6,40' },
+                { k: 'rp', t: 'Resultado posterior / cierre', w: 'w-[13%]', ml: 60, centro: true, calif: true, ph: 'Ej.: 7,50' },
+                { k: 'ac', t: 'Acción aplicada', ph: 'Ej.: Tutoría y ficha guiada.' },
+                { k: 'ev', t: 'Evidencia de mejora', ph: 'Ej.: Lección escrita aprobada.' }
+            ] },
+            alertasNoSup: { max: 40, numerar: true, boton: '➕ Agregar estudiante', cols: [
+                { k: 'es', t: 'Estudiante', w: 'w-[22%]', ml: 150, ph: 'Ej.: A. C.' },
+                { k: 'cc', t: 'Calificación al cierre', w: 'w-[13%]', ml: 20, centro: true, calif: true, ph: 'Ej.: 5,80' },
+                { k: 'd',  t: 'Dificultad que persiste', ph: 'Ej.: Aún no interpreta gráficos de datos.' },
+                { k: 'se', t: 'Acción / seguimiento requerido', ph: 'Ej.: Continuar refuerzo y citar al representante.' }
+            ] },
             refuerzoPed: { max: 40, numerar: false, boton: '➕ Agregar estudiante', cols: [
                 { k: 'es',  t: 'Estudiante', w: 'w-[14%]', ml: 150, ph: 'Ej.: A. C.' },
                 { k: 'ap',  t: 'Aprendizaje por fortalecer', ph: 'Ej.: Flujo de energía.' },
@@ -13699,6 +13723,9 @@ ${estilosHtml}
                 datos.consolidado = {};
                 datos.v = 2;
             }
+            // 2026-11-18: informes ya guardados no tienen 6.1/6.2 — se agregan con una fila vacía, sin
+            // tocar ninguna otra sección.
+            ['alertasSup', 'alertasNoSup'].forEach(lista => { if (!Array.isArray(datos[lista])) datos[lista] = [iaFilaVacia(lista)]; });
             LISTAS_TABLA_IA.forEach(lista => { if (!Array.isArray(datos[lista])) datos[lista] = []; });
             if (!Array.isArray(datos.conclusionesL)) datos.conclusionesL = [];
             if (!datos.consolidado || typeof datos.consolidado !== 'object') datos.consolidado = {};
@@ -13753,10 +13780,12 @@ ${estilosHtml}
             el.style.height = el.scrollHeight + 'px';
         }
 
-        function iaPlaceholderCalificacion(curso) {
+        function iaPlaceholderCalificacion(curso, col) {
             // Inicial a 4to EGB: escala cualitativa A+ a E-; 5to EGB a 3ro BGC: numérica.
-            if (esCursoInicialOPreparatoria(curso) || esCursoCualitativoElemental(curso)) return 'Ej.: C+';
-            return 'Ej.: 6,40';
+            const cualitativo = !!curso && (esCursoInicialOPreparatoria(curso) || esCursoCualitativoElemental(curso));
+            const k = col && col.k;
+            if (cualitativo) return k === 'rp' ? 'Ej.: B+' : 'Ej.: C+';
+            return (col && col.ph) || 'Ej.: 6,40';
         }
 
         function iaCeldaEditable(lista, idx, col, valor, placeholder) {
@@ -13783,7 +13812,7 @@ ${estilosHtml}
                     if (lista === 'cumplimiento' && c.k === 'c' && fila.fijo) {
                         h += `<td class="p-1 align-top ${c.w || ''}">${escaparHtml(fila.c)}</td>`; // componente oficial: no editable
                     } else {
-                        const ph = (lista === 'alertas' && c.k === 'ca') ? iaPlaceholderCalificacion(curso) : null;
+                        const ph = ((lista === 'alertas' && c.k === 'ca') || c.calif) ? iaPlaceholderCalificacion(curso, c) : null;
                         h += iaCeldaEditable(lista, idx, c, fila[c.k] || '', ph);
                     }
                 });
@@ -15752,7 +15781,7 @@ ${estilosHtml}
                         let json2 = '';
                         if (inf.v === 2) {
                             const parte2 = { v: 2 };
-                            ['cumplimiento', 'resultados', 'alertas', 'consolidado', 'refuerzoPed', 'nee', 'conclusionesL', 'compromisos'].forEach(k => { if (inf[k] !== undefined) parte2[k] = inf[k]; });
+                            ['cumplimiento', 'resultados', 'alertas', 'alertasSup', 'alertasNoSup', 'consolidado', 'refuerzoPed', 'nee', 'conclusionesL', 'compromisos'].forEach(k => { if (inf[k] !== undefined) parte2[k] = inf[k]; });
                             json2 = JSON.stringify(parte2);
                         }
                         const trozos = COLUMNAS_JSON_FORMATO2_IA.map((_, i) => json2.slice(i * 30000, (i + 1) * 30000));
