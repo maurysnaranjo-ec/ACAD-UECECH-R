@@ -2300,181 +2300,92 @@
                 </div>
 
                 <div class="lg:col-span-2 border rounded-xl p-6 bg-white shadow-sm" id="bloque-plan-impresion">
-                    <!-- Reforma 2026-11: formato institucional "PLAN DE REFUERZO PEDAGÓGICO (D2.C2.DO13)". Los datos
-                         ya guardados del formato anterior se migran sin borrarse (normalizarTextoRefuerzo). -->
-                    <div class="doc-institucional p-6 border-2 border-slate-800 rounded space-y-3 bg-white relative text-[11px]">
+                    <div class="doc-institucional p-6 border-2 border-slate-800 rounded space-y-4 bg-white relative">
                         <div class="doc-institucional-encabezado" style="border-bottom: none; padding-bottom: 0; margin-bottom: 0;">
                             <img src="" class="logo-institucional-img w-14 h-14 object-contain mx-auto mb-1" alt="Escudo Institucional">
                             <h3 class="doc-nombre-ue" id="plan-institucion">UNIDAD EDUCATIVA</h3>
                             <p class="doc-amie" id="plan-amie">Código AMIE: -</p>
-                            <h4 class="doc-titulo">PLAN DE REFUERZO PEDAGÓGICO (D2.C2.DO13)</h4>
-                            <p class="doc-meta">Para estudiantes identificados mediante la alerta temprana de bajos rendimientos.</p>
+                            <h4 class="doc-titulo">PLANIFICACIÓN DE REFUERZO ACADÉMICO INDIVIDUALIZADO</h4>
                             <p class="doc-meta" id="plan-meta-periodo">Periodo: -</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2 bg-slate-50 p-3 border rounded text-slate-700">
+                            <div><b>Docente:</b> <span id="plan-docente">-</span></div>
+                            <div><b>Asignatura:</b> <span id="plan-asignatura">-</span></div>
+                            <div><b>Curso y Paralelo:</b> <span id="plan-curso">-</span></div>
+                            <div><b>Año Lectivo:</b> <span id="plan-anio">-</span></div>
+                            <div class="col-span-2 border-t pt-1 mt-1"><b>Estudiante:</b> <span id="plan-estudiante" class="font-bold uppercase text-red-700">-</span></div>
+                            <div><b>Condición NEE:</b> <span id="plan-nee" class="font-bold text-purple-700">-</span></div>
+                            <div><b>Rendimiento / Calificación:</b> <span id="plan-nota" class="font-bold">-</span></div>
                         </div>
 
                         <div id="refuerzo-aviso-tamano" class="hidden no-print bg-red-100 border border-red-700 text-red-800 font-bold text-[11px] px-2 py-1 rounded"></div>
 
-                        <!-- DATOS INFORMATIVOS -->
-                        <table class="w-full border-collapse border-2 border-slate-700">
-                            <tr><td colspan="4" class="doc-seccion-titulo text-center p-1.5 uppercase font-bold">Datos Informativos</td></tr>
-                            <tr class="divide-x divide-slate-400 border-b border-slate-400">
-                                <td class="bg-slate-100 font-bold p-1.5 w-[20%]">Nombre del estudiante</td>
-                                <td class="p-1.5 font-bold uppercase text-red-700" id="plan-estudiante">-</td>
-                                <td class="bg-slate-100 font-bold p-1.5 w-[20%]">Calificación al refuerzo</td>
-                                <td class="p-1.5 font-bold" id="plan-nota">-</td>
-                            </tr>
-                            <tr class="divide-x divide-slate-400 border-b border-slate-400">
-                                <td class="bg-slate-100 font-bold p-1.5">Grado / Curso / Paralelo</td>
-                                <td class="p-1.5" id="plan-curso">-</td>
-                                <td class="bg-slate-100 font-bold p-1.5">Docente responsable</td>
-                                <td class="p-1.5" id="plan-docente">-</td>
-                            </tr>
-                            <tr class="divide-x divide-slate-400 border-b border-slate-400">
-                                <td class="bg-slate-100 font-bold p-1.5">Área / Asignatura</td>
-                                <td class="p-0.5"><input type="text" data-rf-campo="area" maxlength="120" oninput="rfCampo(this)" class="w-full p-1 outline-none no-print-border bg-transparent"></td>
-                                <td class="bg-slate-100 font-bold p-1.5">Tutor/a</td>
-                                <td class="p-0.5"><input type="text" data-rf-campo="tutor" maxlength="150" oninput="rfCampo(this)" placeholder="Docente tutor/a del curso" class="w-full p-1 outline-none no-print-border bg-transparent"></td>
-                            </tr>
-                            <tr class="divide-x divide-slate-400 border-b border-slate-400">
-                                <td class="bg-slate-100 font-bold p-1.5">Unidad de refuerzo</td>
-                                <td class="p-0.5"><input type="text" data-rf-campo="unidad" maxlength="150" oninput="rfCampo(this)" placeholder="Ej.: Unidad 3" class="w-full p-1 outline-none no-print-border bg-transparent"></td>
-                                <td class="bg-slate-100 font-bold p-1.5">Vicerrectorado</td>
-                                <td class="p-1.5" id="plan-vicerrector-datos">-</td>
-                            </tr>
-                            <tr class="divide-x divide-slate-400 border-b border-slate-400 align-top">
-                                <td class="bg-slate-100 font-bold p-1.5">Modalidad</td>
-                                <td class="p-1.5 space-y-0.5">
-                                    <label class="block"><input type="checkbox" data-rf-check="modalidad.presencial" onchange="rfCheck(this)"> Presencial</label>
-                                    <label class="block"><input type="checkbox" data-rf-check="modalidad.sincronica" onchange="rfCheck(this)"> Sincrónica</label>
-                                    <label class="block"><input type="checkbox" data-rf-check="modalidad.asincronica" onchange="rfCheck(this)"> Asincrónica</label>
-                                </td>
-                                <td class="p-1.5 space-y-0.5" colspan="2">
-                                    <label class="mr-3"><input type="checkbox" data-rf-check="lugar.aula" onchange="rfCheck(this)"> Dentro del aula</label>
-                                    <label class="mr-3"><input type="checkbox" data-rf-check="lugar.extraclase" onchange="rfCheck(this)"> Extra clase</label>
-                                    <label class="mr-3"><input type="checkbox" data-rf-check="lugar.tutoria" onchange="rfCheck(this)"> Tutoría</label>
-                                    <span class="inline-flex items-center gap-1"><input type="checkbox" data-rf-check="lugar.otra" onchange="rfCheck(this)"> Otra: <input type="text" data-rf-campo="lugarOtra" maxlength="100" oninput="rfCampo(this)" class="border-b border-slate-400 outline-none no-print-border bg-transparent w-40"></span>
-                                </td>
-                            </tr>
-                            <tr class="divide-x divide-slate-400 border-b border-slate-400">
-                                <td class="bg-slate-100 font-bold p-1.5">Fecha de inicio</td>
-                                <td class="p-0.5"><input type="date" data-rf-campo="fechaInicio" oninput="rfCampo(this)" class="w-full p-1 outline-none no-print-border bg-transparent"></td>
-                                <td class="bg-slate-100 font-bold p-1.5">Fecha de finalización</td>
-                                <td class="p-0.5"><input type="date" data-rf-campo="fechaFin" oninput="rfCampo(this)" class="w-full p-1 outline-none no-print-border bg-transparent"></td>
-                            </tr>
-                            <tr class="divide-x divide-slate-400">
-                                <td class="bg-slate-100 font-bold p-1.5">Horario</td>
-                                <td class="p-1.5">Desde las <input type="time" data-rf-campo="horaDesde" oninput="rfCampo(this)" class="outline-none border-b border-slate-400 no-print-border bg-transparent"> hasta <input type="time" data-rf-campo="horaHasta" oninput="rfCampo(this)" class="outline-none border-b border-slate-400 no-print-border bg-transparent"></td>
-                                <td class="bg-slate-100 font-bold p-1.5">Vía de comunicación</td>
-                                <td class="p-0.5"><input type="text" data-rf-campo="viaComunicacion" maxlength="150" oninput="rfCampo(this)" placeholder="Ej.: Llamada, WhatsApp, reunión presencial" class="w-full p-1 outline-none no-print-border bg-transparent"></td>
-                            </tr>
-                        </table>
-                        <p class="no-print text-[10px] text-slate-500">Condición NEE del estudiante: <b id="plan-nee" class="text-purple-700">-</b> · Asignatura: <span id="plan-asignatura">-</span> · Año lectivo: <span id="plan-anio">-</span></p>
+                        <div class="space-y-3">
+                            <!-- Solo en planes libres (2026-11): motivo por el que se abre el plan fuera del trimestre. -->
+                            <div id="plan-bloque-motivo" class="hidden border-2 border-slate-700 rounded overflow-hidden">
+                                <div class="grid grid-cols-[110px_1fr]">
+                                    <div class="doc-seccion-titulo text-[10px] p-2 flex items-center">Motivo:</div>
+                                    <textarea id="plan-motivo" maxlength="1500" oninput="guardarTextoRefuerzo('motivo', this.value)" class="w-full p-2 outline-none text-[11px] resize-none h-12" placeholder="Ej.: Dificultades detectadas en la evaluación formativa de la unidad 3."></textarea>
+                                </div>
+                            </div>
+                            <div class="border-2 border-slate-700 rounded overflow-hidden">
+                                <div class="grid grid-cols-[110px_1fr]">
+                                    <div class="doc-seccion-titulo text-[10px] p-2 flex items-center">Objetivo:</div>
+                                    <textarea id="plan-objetivo" oninput="guardarTextoRefuerzo('objetivo', this.value)" class="w-full p-2 outline-none text-[11px] resize-none h-16" placeholder="Ej: Fortalecer los aprendizajes y desarrollar las destrezas que presentan mayor dificultad en cada estudiante, mediante actividades pedagógicas personalizadas, estrategias de acompañamiento y seguimiento continuo, con el fin de favorecer el logro de los objetivos de aprendizaje y mejorar su rendimiento académico."></textarea>
+                                </div>
+                            </div>
 
-                        <!-- Solo en planes libres: motivo por el que se abre el plan fuera del trimestre. -->
-                        <div id="plan-bloque-motivo" class="hidden border-2 border-slate-700 rounded overflow-hidden">
-                            <div class="grid grid-cols-[110px_1fr]">
-                                <div class="doc-seccion-titulo text-[10px] p-2 flex items-center">Motivo:</div>
-                                <textarea id="plan-motivo" maxlength="1500" oninput="guardarTextoRefuerzo('motivo', this.value)" class="w-full p-2 outline-none text-[11px] resize-none h-12" placeholder="Ej.: Dificultades detectadas en la evaluación formativa de la unidad 3."></textarea>
+                            <div class="flex justify-between items-center no-print">
+                                <label class="block font-bold text-slate-700 uppercase text-[10px]">📋 Destrezas a Reforzar (máx. 5):</label>
+                                <div class="flex gap-1">
+                                    <button onclick="agregarFilaDestrezaRefuerzo()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-bold px-2 py-1 rounded">➕ Agregar Destreza</button>
+                                    <button id="btn-eliminar-plan-libre" onclick="eliminarPlanLibreRefuerzo()" class="hidden bg-red-700 hover:bg-red-800 text-white text-[10px] font-bold px-2 py-1 rounded">🗑️ Eliminar este plan libre</button>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto border-2 border-slate-700 rounded">
+                                <table class="w-full text-left text-[10px] border-collapse">
+                                    <thead>
+                                        <tr class="doc-seccion-titulo text-center divide-x divide-emerald-800">
+                                            <th class="p-1.5 w-1/4">Destrezas Reforzadas</th>
+                                            <th class="p-1.5 w-1/4">Estrategias Metodológicas</th>
+                                            <th class="p-1.5 w-1/5">Recursos</th>
+                                            <th class="p-1.5 w-1/4">Actividad de Evaluación</th>
+                                            <th class="p-1.5 w-8 no-print"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="plan-tabla-destrezas-body" class="divide-y divide-slate-400"></tbody>
+                                </table>
+                            </div>
+
+                            <div class="border-2 border-slate-700 rounded overflow-hidden">
+                                <div class="grid grid-cols-[110px_1fr]">
+                                    <div class="doc-seccion-titulo text-[10px] p-2 flex items-center">Observaciones:</div>
+                                    <textarea id="plan-observaciones" oninput="guardarTextoRefuerzo('observaciones', this.value)" class="w-full p-2 outline-none text-[11px] resize-none h-16"></textarea>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- OBJETIVO DEL REFUERZO -->
-                        <div class="border-2 border-slate-700 rounded overflow-hidden">
-                            <div class="doc-seccion-titulo text-center p-1.5 uppercase font-bold">Objetivo del Refuerzo</div>
-                            <textarea id="plan-objetivo" maxlength="2000" oninput="guardarTextoRefuerzo('objetivo', this.value)" class="w-full p-2 outline-none text-[11px] resize-none h-16"></textarea>
-                        </div>
-
-                        <!-- PLAN DE ACCIÓN PEDAGÓGICA -->
-                        <div class="flex justify-between items-center no-print">
-                            <label class="block font-bold text-slate-700 uppercase text-[10px]">📋 Plan de acción pedagógica:</label>
-                            <div class="flex gap-1">
-                                <button onclick="agregarFilaDestrezaRefuerzo()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-bold px-2 py-1 rounded">➕ Agregar fila</button>
-                                <button id="btn-eliminar-plan-libre" onclick="eliminarPlanLibreRefuerzo()" class="hidden bg-red-700 hover:bg-red-800 text-white text-[10px] font-bold px-2 py-1 rounded">🗑️ Eliminar este plan libre</button>
+                        <div class="grid grid-cols-2 gap-x-6 gap-y-10 justify-items-center text-center text-xs font-bold pt-10">
+                            <div class="w-48">
+                                <p class="border-t border-slate-700 pt-1 doc-firma-nombre" id="plan-firma-docente">-</p>
+                                <p class="font-normal text-[10px] uppercase text-slate-500">Docente</p>
+                            </div>
+                            <div class="w-48">
+                                <input type="text" id="plan-firma-coordinador" placeholder="Nombre del Director/a o Coordinador/a" oninput="guardarTextoRefuerzo('coordinadorManual', this.value)" class="w-full border-t border-slate-700 pt-1 text-center outline-none no-print-border bg-transparent doc-firma-nombre">
+                                <p class="font-normal text-[10px] uppercase text-slate-500">Director/a | Coordinador/a - Área | Nivel</p>
+                            </div>
+                            <div class="w-48">
+                                <p class="border-t border-slate-700 pt-1 doc-firma-nombre" id="plan-firma-vicerrector">-</p>
+                                <p class="font-normal text-[10px] uppercase text-slate-500">Vicerrector/a</p>
+                            </div>
+                            <!-- 2026-11: firma de recibido del representante legal del estudiante. -->
+                            <div class="w-48">
+                                <input type="text" id="plan-firma-representante" maxlength="150" placeholder="Nombre del representante" oninput="guardarTextoRefuerzo('representanteManual', this.value)" class="w-full border-t border-slate-700 pt-1 text-center outline-none no-print-border bg-transparent doc-firma-nombre" title="Se toma de Información de Estudiantes; puede corregirlo aquí.">
+                                <p class="font-normal text-[10px] uppercase text-slate-500">Representante legal — Recibido</p>
+                                <p class="font-normal text-[10px] text-slate-500" id="plan-firma-representante-cedula"></p>
                             </div>
                         </div>
-                        <div class="overflow-x-auto border-2 border-slate-700 rounded">
-                            <table class="w-full text-left text-[10px] border-collapse">
-                                <thead>
-                                    <tr><th colspan="6" class="doc-seccion-titulo text-center p-1.5 uppercase">Plan de Acción Pedagógica</th></tr>
-                                    <tr class="doc-seccion-titulo text-center divide-x divide-emerald-800">
-                                        <th class="p-1.5 w-[22%]">Aprendizaje a fortalecer (DCD / Indicador)</th>
-                                        <th class="p-1.5">Actividad de refuerzo</th>
-                                        <th class="p-1.5">Estrategia / Metodología</th>
-                                        <th class="p-1.5 w-[15%]">Recursos</th>
-                                        <th class="p-1.5 w-[15%]">Evidencia</th>
-                                        <th class="p-1.5 w-8 no-print"></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="plan-tabla-destrezas-body" class="divide-y divide-slate-400"></tbody>
-                            </table>
-                        </div>
-
-                        <!-- COMUNICACIÓN CON EL REPRESENTANTE LEGAL Y ESTUDIANTE -->
-                        <table class="w-full border-collapse border-2 border-slate-700">
-                            <tr><td colspan="3" class="doc-seccion-titulo text-center p-1.5 uppercase font-bold">Comunicación con el Representante Legal y Estudiante</td></tr>
-                            <tr class="bg-slate-100 font-bold text-center divide-x divide-slate-400 border-b border-slate-400">
-                                <td class="p-1.5 w-1/3">Aspectos comunicados</td><td class="p-1.5 w-1/3">Compromisos del representante</td><td class="p-1.5 w-1/3">Compromisos del estudiante</td>
-                            </tr>
-                            <tr class="divide-x divide-slate-400 align-top">
-                                <td class="p-1.5 space-y-0.5">
-                                    <label class="block"><input type="checkbox" data-rf-check="aspectos.dificultad" onchange="rfCheck(this)"> Dificultad identificada</label>
-                                    <label class="block"><input type="checkbox" data-rf-check="aspectos.estrategias" onchange="rfCheck(this)"> Estrategias de refuerzo</label>
-                                    <label class="block"><input type="checkbox" data-rf-check="aspectos.apoyoCasa" onchange="rfCheck(this)"> Forma de apoyo en casa</label>
-                                    <label class="block"><input type="checkbox" data-rf-check="aspectos.resultados" onchange="rfCheck(this)"> Resultados y acciones posteriores</label>
-                                </td>
-                                <td class="p-0.5"><textarea data-rf-campo="compromisosRep" maxlength="1500" oninput="rfCampo(this)" class="w-full p-1.5 outline-none resize-none h-20 text-[11px]"></textarea></td>
-                                <td class="p-0.5"><textarea data-rf-campo="compromisosEst" maxlength="1500" oninput="rfCampo(this)" class="w-full p-1.5 outline-none resize-none h-20 text-[11px]"></textarea></td>
-                            </tr>
-                        </table>
-
-                        <!-- Observaciones del formato anterior: solo se muestran si el plan ya tenía alguna, para no perderlas. -->
-                        <div id="plan-bloque-observaciones" class="hidden border-2 border-slate-700 rounded overflow-hidden">
-                            <div class="grid grid-cols-[110px_1fr]">
-                                <div class="doc-seccion-titulo text-[10px] p-2 flex items-center">Observaciones:</div>
-                                <textarea id="plan-observaciones" maxlength="2000" oninput="guardarTextoRefuerzo('observaciones', this.value)" class="w-full p-2 outline-none text-[11px] resize-none h-14"></textarea>
-                            </div>
-                        </div>
-
-                        <!-- FIRMAS DE RESPONSABILIDAD -->
-                        <table class="w-full border-collapse border-2 border-slate-700">
-                            <tr><td colspan="4" class="doc-seccion-titulo text-center p-1.5 uppercase font-bold">Firmas de Responsabilidad</td></tr>
-                            <tr class="bg-slate-100 font-bold text-center divide-x divide-slate-400 border-b border-slate-400">
-                                <td class="p-1.5 w-[20%]">Responsable</td><td class="p-1.5">Nombre</td><td class="p-1.5 w-[25%]">Firma</td><td class="p-1.5 w-[17%]">Fecha</td>
-                            </tr>
-                            <tr class="divide-x divide-slate-400 border-b border-slate-400">
-                                <td class="p-1.5 font-bold">Docente</td>
-                                <td class="p-1.5 doc-firma-nombre" id="plan-firma-docente">-</td>
-                                <td class="h-10"></td>
-                                <td class="p-0.5"><input type="date" data-rf-campo="fechaFirma.docente" oninput="rfCampo(this)" class="w-full p-1 outline-none no-print-border bg-transparent"></td>
-                            </tr>
-                            <tr class="divide-x divide-slate-400 border-b border-slate-400">
-                                <td class="p-1.5 font-bold">Estudiante</td>
-                                <td class="p-1.5 doc-firma-nombre" id="plan-firma-estudiante">-</td>
-                                <td class="h-10"></td>
-                                <td class="p-0.5"><input type="date" data-rf-campo="fechaFirma.estudiante" oninput="rfCampo(this)" class="w-full p-1 outline-none no-print-border bg-transparent"></td>
-                            </tr>
-                            <tr class="divide-x divide-slate-400 border-b border-slate-400">
-                                <td class="p-1.5 font-bold">Representante legal</td>
-                                <td class="p-0.5">
-                                    <input type="text" id="plan-firma-representante" maxlength="150" placeholder="Nombre del representante" oninput="guardarTextoRefuerzo('representanteManual', this.value)" class="w-full p-1 outline-none no-print-border bg-transparent doc-firma-nombre" title="Se toma de Información de Estudiantes; puede corregirlo aquí.">
-                                    <span class="block px-1 text-[10px] text-slate-500" id="plan-firma-representante-cedula"></span>
-                                </td>
-                                <td class="h-10"></td>
-                                <td class="p-0.5"><input type="date" data-rf-campo="fechaFirma.representante" oninput="rfCampo(this)" class="w-full p-1 outline-none no-print-border bg-transparent"></td>
-                            </tr>
-                            <tr class="divide-x divide-slate-400 border-b border-slate-400">
-                                <td class="p-1.5 font-bold">Director/a de Área</td>
-                                <td class="p-0.5"><input type="text" id="plan-firma-coordinador" maxlength="150" placeholder="Nombre del Director/a o Coordinador/a" oninput="guardarTextoRefuerzo('coordinadorManual', this.value)" class="w-full p-1 outline-none no-print-border bg-transparent doc-firma-nombre"></td>
-                                <td class="h-10"></td>
-                                <td class="p-0.5"><input type="date" data-rf-campo="fechaFirma.director" oninput="rfCampo(this)" class="w-full p-1 outline-none no-print-border bg-transparent"></td>
-                            </tr>
-                            <tr class="divide-x divide-slate-400">
-                                <td class="p-1.5 font-bold">Vicerrectorado</td>
-                                <td class="p-1.5 doc-firma-nombre" id="plan-firma-vicerrector">-</td>
-                                <td class="h-10"></td>
-                                <td class="p-0.5"><input type="date" data-rf-campo="fechaFirma.vicerrector" oninput="rfCampo(this)" class="w-full p-1 outline-none no-print-border bg-transparent"></td>
-                            </tr>
-                        </table>
                     </div>
                 </div>
             </div>
@@ -5387,9 +5298,8 @@ ${estilosHtml}
             const textoOriginal = boton ? boton.innerText : '';
             if (boton) { boton.disabled = true; boton.innerText = '⏳ Preparando...'; }
             try {
-                // Formato 2026-11: las celdas editables salen como texto (fechas legibles, sin textos guía).
-                const html = capturarBloqueImprimible(clonarConCamposComoTexto('#bloque-plan-impresion .doc-institucional'));
-                abrirVentanaImpresionDocumentos('Plan de Refuerzo Pedagógico', [{ html }], 'portrait', false);
+                const html = capturarBloqueImprimible('#bloque-plan-impresion .doc-institucional');
+                abrirVentanaImpresionDocumentos('Plan de Refuerzo Académico Pedagógico', [{ html }], 'portrait', false);
             } finally {
                 if (boton) { boton.disabled = false; boton.innerText = textoOriginal; }
             }
@@ -6861,25 +6771,15 @@ ${estilosHtml}
             excelEstudiantesOrdenados(curso).forEach(e => {
                 const planesEst = (curso.textosRefuerzo && curso.textosRefuerzo[e.id]) || {};
                 Object.keys(planesEst).forEach(periodo => {
-                    // Copia ya en el formato 2026-11 (lo guardado no cambia).
-                    const p = planesEst[periodo] ? normalizarTextoRefuerzo(JSON.parse(JSON.stringify(planesEst[periodo]))) : null;
-                    if (!p || (!p.objetivo && !p.observaciones && !p.acciones.some(a => Object.values(a).some(v => String(v || '').trim())))) return;
-                    const marcados = (obj, nombres) => Object.keys(nombres).filter(k => obj && obj[k]).map(k => nombres[k]).join(', ') || '-';
+                    const p = planesEst[periodo];
+                    if (!p || (!p.objetivo && !p.observaciones && (!p.destrezas || !p.destrezas.length))) return;
                     const etiqueta = esPlanLibreRefuerzo(periodo)
                         ? `Plan libre${p.creado ? ' (' + formatearFechaCortaRefuerzo(p.creado) + ')' : ''}`
                         : (etiquetasPeriodo[periodo] || periodo);
                     bloques.push({ titulo: `${e.nombre} — ${etiqueta}`, campos: [
                         ...(esPlanLibreRefuerzo(periodo) ? [['Motivo', p.motivo || '-']] : []),
-                        ['Área / Unidad de refuerzo', `${p.area || curso.asignatura || '-'} / ${p.unidad || '-'}`],
-                        ['Tutor/a', p.tutor || '-'],
-                        ['Modalidad', `${marcados(p.modalidad, { presencial: 'Presencial', sincronica: 'Sincrónica', asincronica: 'Asincrónica' })} — ${marcados(p.lugar, { aula: 'Dentro del aula', extraclase: 'Extra clase', tutoria: 'Tutoría', otra: 'Otra: ' + (p.lugarOtra || '') })}`],
-                        ['Fechas / Horario', `${p.fechaInicio || '-'} a ${p.fechaFin || '-'} · ${p.horaDesde || '-'} a ${p.horaHasta || '-'}`],
-                        ['Vía de comunicación', p.viaComunicacion || '-'],
-                        ['Objetivo del refuerzo', p.objetivo || '-'],
-                        ['Plan de acción pedagógica', p.acciones.map(a => `• ${a.aprendizaje || '(sin definir)'} — Actividad: ${a.actividad || '-'} — Estrategia: ${a.estrategia || '-'} — Recursos: ${a.recursos || '-'} — Evidencia: ${a.evidencia || '-'}`).join('\n')],
-                        ['Aspectos comunicados', marcados(p.aspectos, { dificultad: 'Dificultad identificada', estrategias: 'Estrategias de refuerzo', apoyoCasa: 'Forma de apoyo en casa', resultados: 'Resultados y acciones posteriores' })],
-                        ['Compromisos del representante', p.compromisosRep || '-'],
-                        ['Compromisos del estudiante', p.compromisosEst || '-'],
+                        ['Objetivo', p.objetivo || '-'],
+                        ['Destrezas / Estrategias', (p.destrezas || []).map(d => `• ${d.destreza || '(sin definir)'} — Estrategia: ${d.estrategia || '-'} — Recursos: ${d.recursos || '-'} — Evaluación: ${d.evaluacion || '-'}`).join('\n')],
                         ['Observaciones', p.observaciones || '-']
                     ]});
                 });
@@ -15294,50 +15194,8 @@ ${estilosHtml}
             if(txt.objetivo === undefined || txt.objetivo === '') txt.objetivo = OBJETIVO_REFUERZO_DEFECTO;
             if(txt.observaciones === undefined) txt.observaciones = '';
             if(txt.coordinadorManual === undefined) txt.coordinadorManual = '';
-            // Reforma 2026-11 — formato "PLAN DE REFUERZO PEDAGÓGICO (D2.C2.DO13)". Las filas del formato
-            // anterior (destrezas) se copian al "Plan de acción pedagógica" (acciones) sin borrar las originales:
-            // Destreza → Aprendizaje a fortalecer, Estrategia → Estrategia, Recursos → Recursos,
-            // Actividad de evaluación → Evidencia.
-            if (txt.v !== 2) {
-                txt.acciones = (txt.destrezas || [])
-                    .filter(d => d && (d.destreza || d.estrategia || d.recursos || d.evaluacion))
-                    .map(d => ({ aprendizaje: d.destreza || '', actividad: '', estrategia: d.estrategia || '', recursos: d.recursos || '', evidencia: d.evaluacion || '' }));
-                txt.v = 2;
-            }
-            if (!Array.isArray(txt.acciones)) txt.acciones = [];
-            if (!txt.acciones.length) txt.acciones.push({ aprendizaje: '', actividad: '', estrategia: '', recursos: '', evidencia: '' });
-            ['area', 'tutor', 'unidad', 'lugarOtra', 'fechaInicio', 'fechaFin', 'horaDesde', 'horaHasta', 'viaComunicacion', 'compromisosRep', 'compromisosEst']
-                .forEach(k => { if (txt[k] === undefined || txt[k] === null) txt[k] = ''; });
-            ['modalidad', 'lugar', 'aspectos', 'fechaFirma'].forEach(k => { if (!txt[k] || typeof txt[k] !== 'object') txt[k] = {}; });
+            if(txt.destrezas.length === 0) txt.destrezas.push({ destreza: '', estrategia: '', recursos: '', evaluacion: '' });
             return txt;
-        }
-
-        const MAX_ACCIONES_REFUERZO = 10;
-        // Lee/escribe un campo del plan por ruta ("unidad", "fechaFirma.docente", "modalidad.presencial").
-        function rfLeer(plan, ruta) { return ruta.split('.').reduce((o, k) => (o && o[k] !== undefined ? o[k] : ''), plan); }
-        function rfEscribir(plan, ruta, valor) {
-            const partes = ruta.split('.'); const ultima = partes.pop();
-            const destino = partes.reduce((o, k) => { if (!o[k] || typeof o[k] !== 'object') o[k] = {}; return o[k]; }, plan);
-            destino[ultima] = valor;
-        }
-        function rfPlanActivo() {
-            if (!estudiantePlanActivoId || !periodoPlanActivo) return null;
-            const curso = db.cursos[db.cursoActivoIndex];
-            return (curso.textosRefuerzo && curso.textosRefuerzo[estudiantePlanActivoId] && curso.textosRefuerzo[estudiantePlanActivoId][periodoPlanActivo]) || null;
-        }
-        // Campo de texto/fecha/hora del formato nuevo (con el control de tamaño de la celda del estudiante).
-        function rfCampo(el) {
-            const plan = rfPlanActivo(); if (!plan) return;
-            const ruta = el.dataset.rfCampo;
-            const anterior = rfLeer(plan, ruta);
-            rfEscribir(plan, ruta, el.value);
-            if (!refuerzoCabeEnCelda(estudiantePlanActivoId)) { rfEscribir(plan, ruta, anterior); el.value = anterior || ''; avisarTamanoRefuerzo(); return; }
-            salvar();
-        }
-        function rfCheck(el) {
-            const plan = rfPlanActivo(); if (!plan) return;
-            rfEscribir(plan, el.dataset.rfCheck, !!el.checked);
-            salvar();
         }
 
         function limpiarFichaPlan() {
@@ -15365,11 +15223,6 @@ ${estilosHtml}
             document.getElementById('plan-firma-representante').value = '';
             document.getElementById('plan-firma-representante-cedula').innerText = '';
             document.getElementById('btn-eliminar-plan-libre').classList.add('hidden');
-            document.getElementById('plan-vicerrector-datos').innerText = '-';
-            document.getElementById('plan-firma-estudiante').innerText = '-';
-            document.getElementById('plan-bloque-observaciones').classList.add('hidden');
-            document.querySelectorAll('#bloque-plan-impresion [data-rf-campo]').forEach(el => { el.value = ''; });
-            document.querySelectorAll('#bloque-plan-impresion [data-rf-check]').forEach(el => { el.checked = false; });
         }
 
         // ═══════════════ Planes de refuerzo LIBRES (2026-11) ═══════════════
@@ -15505,24 +15358,19 @@ ${estilosHtml}
             document.getElementById('plan-institucion').innerText = db.configGeneral.ue || "UNIDAD EDUCATIVA";
             document.getElementById('plan-amie').innerText = `Código AMIE: ${db.configGeneral.amie || '-'}`;
             document.getElementById('plan-meta-periodo').innerText = `Bloque Reportado: ${labelPeriodo}`;
-            document.getElementById('plan-docente').innerText = formatearNombreFirma(db.configGeneral.docente || 'Sin Configurar');
+            document.getElementById('plan-docente').innerText = db.configGeneral.docente || 'Sin Configurar';
             document.getElementById('plan-asignatura').innerText = curso.asignatura || 'No Asignada';
             document.getElementById('plan-curso').innerText = `${curso.label || '-'} "${curso.paralelo || '-'}"`;
             document.getElementById('plan-anio').innerText = obtenerAnioLectivo(curso) || '-';
             document.getElementById('plan-estudiante').innerText = est.nombre;
             document.getElementById('plan-nee').innerText = est.nee;
-            // Calificación al refuerzo según cómo se evalúa el grado: Inicial/Preparatoria y 2do-4to EGB en
-            // letras (A+ a E-), 5to EGB a 3ro BGC en números sobre 10.
-            const esLetraNota = typeof nota === 'string' && ESCALA_DESTREZAS_CUALITATIVA.some(e => e.val === nota);
-            document.getElementById('plan-nota').innerText = (esLibre || nota === undefined || nota === '')
+            document.getElementById('plan-nota').innerText = esLibre
                 ? notaActualRefuerzo(curso, estId).largo
-                : (esCursoInicialOPreparatoria(curso) && esLetraNota)
+                : esCursoDeAmbitosCualitativo(curso)
                 ? `${nota} (${(ESCALA_DESTREZAS_CUALITATIVA.find(e => e.val === nota) || {}).grupo || 'Destreza o aprendizaje iniciado'})`
-                : ((esCursoCualitativoElemental(curso) || esCursoInicialOPreparatoria(curso))
-                    ? `${esNotaLetraCualitativa(nota) ? nota : numeroALetraCualitativa(nota)} (${nivelDestrezaCualitativa(nota).largo})`
+                : (esCursoCualitativoElemental(curso)
+                    ? `${nota} (${nivelDestrezaCualitativa(nota).largo})`
                     : `${nota} / 10.00 (${obtenerEquivalenciaRGLOEI(nota).desc})`);
-            document.getElementById('plan-vicerrector-datos').innerText = obtenerNombreVicerrectorParaCurso(curso);
-            document.getElementById('plan-firma-estudiante').innerText = formatearNombreFirma(est.nombre || '');
             document.getElementById('plan-firma-docente').innerText = formatearNombreFirma(db.configGeneral.docente || 'Docente Sin Configurar');
             // Director/a | Coordinador/a - Área | Nivel: siempre editable (de Inicial a 3ro BGC).
             const inputCoordPlanB = document.getElementById('plan-firma-coordinador');
@@ -15537,17 +15385,6 @@ ${estilosHtml}
             inputCoordPlanB.value = txt.coordinadorManual || '';
             document.getElementById('plan-objetivo').value = txt.objetivo;
             document.getElementById('plan-observaciones').value = txt.observaciones;
-            // Observaciones del formato anterior: solo se muestran si el plan ya tenía alguna.
-            document.getElementById('plan-bloque-observaciones').classList.toggle('hidden', !String(txt.observaciones || '').trim());
-            // Campos del formato nuevo. Área y Tutor/a se sugieren solos si están vacíos.
-            document.querySelectorAll('#bloque-plan-impresion [data-rf-campo]').forEach(el => {
-                const ruta = el.dataset.rfCampo;
-                let valor = rfLeer(txt, ruta) || '';
-                if (!valor && ruta === 'area') valor = curso.asignatura || '';
-                if (!valor && ruta === 'tutor' && curso.esAcompanamiento) valor = formatearNombreFirma(db.configGeneral.docente || '');
-                el.value = valor;
-            });
-            document.querySelectorAll('#bloque-plan-impresion [data-rf-check]').forEach(el => { el.checked = !!rfLeer(txt, el.dataset.rfCheck); });
             // Firma de "Recibido" del representante: lo escrito en este plan, o el representante legal
             // registrado en Información de Estudiantes.
             const rep = obtenerRepresentanteEstudiante(curso, estId);
@@ -15561,61 +15398,59 @@ ${estilosHtml}
             setTimeout(() => autoRedimensionarTextareas(document.getElementById('sec-refuerzo')), 0);
         }
 
-        // Plan de acción pedagógica (formato 2026-11): filas en txt.acciones = { aprendizaje, actividad,
-        // estrategia, recursos, evidencia }. Las funciones conservan sus nombres anteriores porque los
-        // botones del plan las siguen usando.
-        const COLUMNAS_ACCION_REFUERZO = [
-            { k: 'aprendizaje', ph: 'Destreza con criterio de desempeño o indicador' },
-            { k: 'actividad', ph: 'Actividad de refuerzo' },
-            { k: 'estrategia', ph: 'Estrategia o metodología' },
-            { k: 'recursos', ph: 'Recursos' },
-            { k: 'evidencia', ph: 'Evidencia' }
-        ];
-
         function renderizarTablaDestrezasRefuerzo() {
             const tbody = document.getElementById('plan-tabla-destrezas-body');
-            const txt = rfPlanActivo();
-            if (!tbody || !txt) return;
-            tbody.innerHTML = txt.acciones.map((fila, idx) => `
+            if(!tbody || !estudiantePlanActivoId || !periodoPlanActivo) return;
+            const curso = db.cursos[db.cursoActivoIndex];
+            const txt = curso.textosRefuerzo[estudiantePlanActivoId][periodoPlanActivo];
+            tbody.innerHTML = '';
+            txt.destrezas.forEach((fila, idx) => {
+                tbody.innerHTML += `
                 <tr class="divide-x divide-slate-400 align-top">
-                    ${COLUMNAS_ACCION_REFUERZO.map(c => `<td class="p-0"><textarea maxlength="800" placeholder="${c.ph}" oninput="actualizarFilaDestrezaRefuerzo(${idx}, '${c.k}', this.value, this)" class="w-full h-20 p-1.5 outline-none resize-none text-[10px]">${escaparHtml(fila[c.k] || '')}</textarea></td>`).join('')}
+                    <td class="p-0"><textarea oninput="actualizarFilaDestrezaRefuerzo(${idx}, 'destreza', this.value)" class="w-full h-20 p-1.5 outline-none resize-none text-[10px]">${fila.destreza || ''}</textarea></td>
+                    <td class="p-0"><textarea oninput="actualizarFilaDestrezaRefuerzo(${idx}, 'estrategia', this.value)" class="w-full h-20 p-1.5 outline-none resize-none text-[10px]">${fila.estrategia || ''}</textarea></td>
+                    <td class="p-0"><textarea oninput="actualizarFilaDestrezaRefuerzo(${idx}, 'recursos', this.value)" class="w-full h-20 p-1.5 outline-none resize-none text-[10px]">${fila.recursos || ''}</textarea></td>
+                    <td class="p-0"><textarea oninput="actualizarFilaDestrezaRefuerzo(${idx}, 'evaluacion', this.value)" class="w-full h-20 p-1.5 outline-none resize-none text-[10px]">${fila.evaluacion || ''}</textarea></td>
                     <td class="p-1 text-center no-print">
-                        ${txt.acciones.length > 1 ? `<button onclick="quitarFilaDestrezaRefuerzo(${idx})" class="text-red-600 hover:text-red-800 font-bold" title="Quitar esta fila">✕</button>` : ''}
+                        ${txt.destrezas.length > 1 ? `<button onclick="quitarFilaDestrezaRefuerzo(${idx})" class="text-red-600 hover:text-red-800 font-bold" title="Quitar esta destreza">✕</button>` : ''}
                     </td>
-                </tr>`).join('');
+                </tr>`;
+            });
         }
 
         function agregarFilaDestrezaRefuerzo() {
-            const txt = rfPlanActivo();
-            if (!txt) return;
-            if (txt.acciones.length >= MAX_ACCIONES_REFUERZO) {
-                alert(`Este plan admite un máximo de ${MAX_ACCIONES_REFUERZO} filas en el plan de acción pedagógica.`);
+            if(!estudiantePlanActivoId || !periodoPlanActivo) return;
+            const curso = db.cursos[db.cursoActivoIndex];
+            const txt = curso.textosRefuerzo[estudiantePlanActivoId][periodoPlanActivo];
+            if(txt.destrezas.length >= MAX_DESTREZAS_REFUERZO) {
+                alert(`Este plan admite un máximo de ${MAX_DESTREZAS_REFUERZO} destrezas.`);
                 return;
             }
-            txt.acciones.push({ aprendizaje: '', actividad: '', estrategia: '', recursos: '', evidencia: '' });
-            if (!refuerzoCabeEnCelda(estudiantePlanActivoId)) { txt.acciones.pop(); avisarTamanoRefuerzo(); return; }
+            txt.destrezas.push({ destreza: '', estrategia: '', recursos: '', evaluacion: '' });
+            if (!refuerzoCabeEnCelda(estudiantePlanActivoId)) { txt.destrezas.pop(); avisarTamanoRefuerzo(); return; }
             salvar();
             renderizarTablaDestrezasRefuerzo();
         }
 
-        async function quitarFilaDestrezaRefuerzo(idx) {
-            const txt = rfPlanActivo();
-            if (!txt || !txt.acciones[idx]) return;
-            const conTexto = Object.values(txt.acciones[idx]).some(v => String(v || '').trim());
-            if (conTexto && !(await mostrarModalConfirmacion('¿Quitar esta fila del plan de acción pedagógica? Se perderá lo escrito en ella.', 'Quitar'))) return;
-            txt.acciones.splice(idx, 1);
+        function quitarFilaDestrezaRefuerzo(idx) {
+            if(!estudiantePlanActivoId || !periodoPlanActivo) return;
+            const curso = db.cursos[db.cursoActivoIndex];
+            const txt = curso.textosRefuerzo[estudiantePlanActivoId][periodoPlanActivo];
+            txt.destrezas.splice(idx, 1);
             salvar();
             renderizarTablaDestrezasRefuerzo();
         }
 
-        function actualizarFilaDestrezaRefuerzo(idx, campo, valor, el) {
-            const txt = rfPlanActivo();
-            if (!txt || !txt.acciones[idx]) return;
-            const anterior = txt.acciones[idx][campo];
-            txt.acciones[idx][campo] = valor;
+        function actualizarFilaDestrezaRefuerzo(idx, campo, valor) {
+            if(!estudiantePlanActivoId || !periodoPlanActivo) return;
+            const curso = db.cursos[db.cursoActivoIndex];
+            const txt = curso.textosRefuerzo[estudiantePlanActivoId][periodoPlanActivo];
+            if(!txt.destrezas[idx]) return;
+            const anterior = txt.destrezas[idx][campo];
+            txt.destrezas[idx][campo] = valor;
             if (!refuerzoCabeEnCelda(estudiantePlanActivoId)) {
-                txt.acciones[idx][campo] = anterior;
-                if (el) el.value = anterior || '';
+                txt.destrezas[idx][campo] = anterior;
+                renderizarTablaDestrezasRefuerzo();
                 avisarTamanoRefuerzo();
                 return;
             }
