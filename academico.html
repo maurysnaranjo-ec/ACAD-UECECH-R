@@ -7049,10 +7049,10 @@ ${estilosHtml}
         // consolidados, que muestran TODAS las materias que de verdad tengan calificaciones guardadas
         // en Datos_Materias para ese curso, sea cual sea su nombre (así no se pierde ninguna materia de
         // Básica Superior/Bachillerato, que no usan la lista fija de 2do-7mo EGB).
-        function excelCalcularValorMateriaPeriodo(calificacionesMateria, estId, periodo, nombreGrado) {
+        function excelCalcularValorMateriaPeriodo(calificacionesMateria, estId, periodo, nombreGrado, nombreMateria) {
             const califs = calificacionesMateria ? calificacionesMateria[estId] : null;
             // 2do-4to EGB: en estos reportes consolidados la nota va como letra A+ a E-.
-            if (esGradoCualitativoElemental(nombreGrado)) return excelValorMateriaPeriodoCualitativo(califs, periodo);
+            if (esMateriaCualitativaEnGrado(nombreMateria, nombreGrado)) return excelValorMateriaPeriodoCualitativo(califs, periodo); // y Animación a la Lectura 5to-10mo
             if (periodo === 'anual') {
                 const t1 = califs ? excelTrimestreSeguro(califs.t1).notaFinal : '';
                 const t2 = califs ? excelTrimestreSeguro(califs.t2).notaFinal : '';
@@ -7178,7 +7178,7 @@ ${estilosHtml}
                     const filas = estudiantes.map((e, idx) => {
                         const fila = [idx + 1, e.cedula || '', e.nombre || '', e.nee || 'Ninguna'];
                         nombresMaterias.forEach(mat => {
-                            PERIODOS_REGISTRO_CONSOLIDADO.forEach(([clave]) => fila.push(excelCalcularValorMateriaPeriodo(datos.materias[mat], e.id, clave, catalogo.grado)));
+                            PERIODOS_REGISTRO_CONSOLIDADO.forEach(([clave]) => fila.push(excelCalcularValorMateriaPeriodo(datos.materias[mat], e.id, clave, catalogo.grado, mat)));
                         });
                         if (!nombresMaterias.length) fila.push('-');
                         return fila;
@@ -7206,7 +7206,7 @@ ${estilosHtml}
                     if (!nombresMaterias.length) encabezados.push('(Sin materias calificadas todavía)');
                     const filas = estudiantes.map((e, idx) => {
                         const fila = [idx + 1, e.cedula || '', e.nombre || '', e.nee || 'Ninguna'];
-                        nombresMaterias.forEach(mat => fila.push(excelCalcularValorMateriaPeriodo(datos.materias[mat], e.id, periodo, catalogo.grado)));
+                        nombresMaterias.forEach(mat => fila.push(excelCalcularValorMateriaPeriodo(datos.materias[mat], e.id, periodo, catalogo.grado, mat)));
                         if (!nombresMaterias.length) fila.push('-');
                         return fila;
                     });
@@ -10504,10 +10504,28 @@ ${estilosHtml}
         function esGradoCualitativoElemental(nombreGrado) {
             return GRADOS_CUALITATIVOS_ELEMENTAL.includes(nombreGrado);
         }
-        // Curso ACTIVO en pantalla: de 2do a 4to EGB y que NO sea OVP (esa materia tiene su propia
-        // matriz cualitativa de 5 indicadores).
+        // ═══════ ANIMACIÓN A LA LECTURA de 5to a 10mo EGB (2026-11-24) ═══════
+        // En estos grados Animación a la Lectura se califica con la misma escala A+ a E- de 2do-4to EGB
+        // (lista desplegable en los mismos campos) y NO entra en el promedio general: en el boletín, el
+        // Acta de Junta y los reportes va como asignatura cualitativa (igual que OVP), al final de todas.
+        // Las notas numéricas ya guardadas NO se borran: se muestran como su letra equivalente
+        // (8 → B+, 9,5 → A+) y se reemplazan solo cuando el/la docente elige una letra.
+        const GRADOS_ANIMACION_LECTURA_CUALITATIVA = ['5to EGB', '6to EGB', '7mo EGB', '8vo EGB', '9no EGB', '10mo EGB'];
+        function esMateriaAnimacionLectura(nombreMateria) {
+            return !!nombreMateria && String(nombreMateria).normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase() === 'animacion a la lectura';
+        }
+        function esAnimacionLecturaCualitativa(nombreMateria, nombreGrado) {
+            return esMateriaAnimacionLectura(nombreMateria) && GRADOS_ANIMACION_LECTURA_CUALITATIVA.includes(nombreGrado);
+        }
+        // ¿Esta materia, en este grado, se califica con letras A+ a E-? (2do-4to EGB: todas; 5to-10mo EGB:
+        // solo Animación a la Lectura).
+        function esMateriaCualitativaEnGrado(nombreMateria, nombreGrado) {
+            return esGradoCualitativoElemental(nombreGrado) || esAnimacionLecturaCualitativa(nombreMateria, nombreGrado);
+        }
+        // Curso ACTIVO en pantalla: de 2do a 4to EGB (o Animación a la Lectura de 5to a 10mo EGB) y que NO
+        // sea OVP (esa materia tiene su propia matriz cualitativa de 5 indicadores).
         function esCursoCualitativoElemental(curso) {
-            return !!(curso && esGradoCualitativoElemental(curso.label) && !esCursoDeOVP(curso));
+            return !!(curso && esMateriaCualitativaEnGrado(curso.asignatura, curso.label) && !esCursoDeOVP(curso));
         }
         function esNotaLetraCualitativa(v) {
             return typeof v === 'string' && LETRA_A_NUMERO_CUALITATIVA[v.trim()] !== undefined;
@@ -12078,6 +12096,8 @@ ${estilosHtml}
                     // supletorio), pero con SU PROPIA fuente de datos en vivo (curso.calificacionesAmbitos).
                     const esColumnaAmbitos = esMateriaCualitativaPorNombre(nombreMat);
                     const esColumnaCualitativa = esColumnaOVP || esColumnaAmbitos;
+                    // 2026-11-24: Animación a la Lectura de 5to-10mo EGB va en letras A+ a E- (sin supletorio).
+                    const esColumnaAnimacion = esAnimacionLecturaCualitativa(nombreMat, curso.label);
                     let m;
                     if (esPropia && !esColumnaCualitativa) {
                         const c = curso.calificaciones[est.id];
@@ -12117,6 +12137,16 @@ ${estilosHtml}
                         if (periodo === 'supletorio') return `<td class="p-1 text-slate-300 bg-slate-50">No aplica</td>`;
                         if (periodo === 'anual') { const ult = m.t3 || m.t2 || m.t1; return `<td class="p-1 font-bold" title="Trimestres: ${m.t1 || '-'} / ${m.t2 || '-'} / ${m.t3 || '-'}">${ult || '-'}</td>`; }
                         return `<td class="p-1">${m[periodo] || '-'}</td>`;
+                    }
+                    if (esColumnaAnimacion) {
+                        const Lt = (v) => { const n = notaLetraONumero(v); return n === null ? '-' : numeroALetraCualitativa(n); };
+                        if (periodo === 'supletorio') return `<td class="p-1 text-slate-300 bg-slate-50">No aplica</td>`;
+                        if (periodo === 'anual') {
+                            const nums = [m.t1, m.t2, m.t3].map(notaLetraONumero);
+                            const anual = nums.every(n => n !== null) ? Math.round(nums.reduce((a, b) => a + b, 0) / 3) : null;
+                            return `<td class="p-1 font-bold" title="Trimestres: ${Lt(m.t1)} / ${Lt(m.t2)} / ${Lt(m.t3)}">${anual === null ? '-' : numeroALetraCualitativa(anual)}</td>`;
+                        }
+                        return `<td class="p-1">${Lt(m[periodo])}</td>`;
                     }
                     if (periodo === 'supletorio' || periodo === 'anual') {
                         const t1 = parseFloat(m.t1), t2 = parseFloat(m.t2), t3 = parseFloat(m.t3);
@@ -14540,6 +14570,27 @@ ${estilosHtml}
                 return redondearSiCualitativo(((parseFloat(n1) + parseFloat(n2) + parseFloat(n3)) / 3).toFixed(2));
             }
 
+            // 2026-11-24: Animación a la Lectura de 5to a 10mo EGB es cualitativa (A+ a E-) y NO entra en el
+            // promedio general. Su fila pasa a ser "cualitativa" (mismos campos esOVP/cualitativaOVP que ya
+            // usan OVP y Ámbitos: el boletín, el Acta de Junta y los reportes la muestran en letras y la
+            // excluyen del promedio porque su 'nota' queda vacía) y se coloca al final de todas.
+            function ajustarAnimacionLectura() {
+                if (!GRADOS_ANIMACION_LECTURA_CUALITATIVA.includes(curso.label)) return;
+                const letra = (v) => { const n = notaLetraONumero(v); return n === null ? '-' : numeroALetraCualitativa(Math.round(n)); };
+                const finales = [];
+                filasAsignaturas = filasAsignaturas.filter(f => {
+                    if (f.esOVP || !esMateriaAnimacionLectura(f.nombre)) return true;
+                    // Anual: f.nota ya es el promedio de los 3 trimestres. Luego del supletorio: se usa el
+                    // promedio anual (esta asignatura no se ajusta por supletorio en el boletín).
+                    const cual = letra(periodo === 'supletorio' && f.promedioAnualRaw !== undefined ? f.promedioAnualRaw : f.nota);
+                    finales.push(esAnual
+                        ? { nombre: f.nombre, esOVP: true, esAnimacionLectura: true, t1: letra(f.t1), t2: letra(f.t2), t3: letra(f.t3), nota: '', cualitativaOVP: cual }
+                        : { nombre: f.nombre, esOVP: true, esAnimacionLectura: true, nota: '', cualitativaOVP: cual });
+                    return false;
+                });
+                filasAsignaturas.push(...finales);
+            }
+
             // ── NUEVO (Básica Superior / Bachillerato, modelo "docente por asignatura"): no hay
             // "cursos hermanos" — TODAS las materias de la malla real de este curso viven en
             // curso.otrasMaterias (de solo lectura, una por cada docente distinto), salvo la propia
@@ -14626,6 +14677,7 @@ ${estilosHtml}
                         filasAsignaturas.push(fila);
                     }
                 });
+                ajustarAnimacionLectura();
                 let notasValidasNuevo = filasAsignaturas.map(f => f.nota).filter(n => n !== '' && n !== undefined && !isNaN(parseFloat(n)));
                 let promedioGeneralNuevo = notasValidasNuevo.length > 0
                     ? (notasValidasNuevo.reduce((acc, n) => acc + parseFloat(n), 0) / notasValidasNuevo.length).toFixed(2)
@@ -14735,6 +14787,7 @@ ${estilosHtml}
                 filasAsignaturas.push({ nombre: NOMBRE_ASIGNATURA_OVP, esOVP: true, nota: '', cualitativaOVP: curso.ovp[estId][periodo] || '-' });
             }
 
+            ajustarAnimacionLectura();
             let notasValidas = filasAsignaturas.map(f => f.nota).filter(n => n !== '' && n !== undefined && !isNaN(parseFloat(n)));
             let promedioGeneral = notasValidas.length > 0
                 ? (notasValidas.reduce((acc, n) => acc + parseFloat(n), 0) / notasValidas.length).toFixed(2)
@@ -14784,7 +14837,7 @@ ${estilosHtml}
                             <td class="p-1.5 font-bold">${f.t2}</td>
                             <td class="p-1.5 font-bold">${f.t3}</td>
                             <td class="p-1.5 font-bold text-amber-900" colspan="2">${escaparHtml(f.cualitativaOVP)}</td>
-                            <td class="p-1.5 text-slate-400" title="OVP es cualitativa: no aplica equivalencia RGLOEI ni entra en el promedio general">—</td>
+                            <td class="p-1.5 text-slate-400" title="Asignatura cualitativa: no aplica equivalencia RGLOEI ni entra en el promedio general">—</td>
                         </tr>`;
                         return;
                     }
@@ -14821,7 +14874,7 @@ ${estilosHtml}
                 // 3ro BGC (solo ese año) no muestra esta fila en absoluto.
                 if (!ocultarPromedioGeneral) tablaFilasAsignaturas += `
                     <tr class="border-t-2 border-slate-800 divide-x text-center bg-emerald-50 font-black">
-                        <td class="p-1.5" colspan="5">PROMEDIO GENERAL DE ASIGNATURAS <span class="font-normal text-[9px] normal-case">(no incluye OVP, es cualitativa)</span></td>
+                        <td class="p-1.5" colspan="5">PROMEDIO GENERAL DE ASIGNATURAS <span class="font-normal text-[9px] normal-case">(no incluye ${filasAsignaturas.some(f => f.esAnimacionLectura) ? 'OVP ni Animación a la Lectura, son cualitativas' : 'OVP, es cualitativa'})</span></td>
                         <td class="p-1.5">${esCualitativoElemental ? L(promedioGeneral) : (promedioGeneral || '-')}</td>
                         <td class="p-1.5">${esCualitativoElemental ? nivelCorto(promedioGeneral) : obtenerEscalaAlfabetica(promedioGeneral)}</td>
                         <td class="p-1.5">${esCualitativoElemental ? equivNum(promedioGeneral) : obtenerEquivalenciaRGLOEI(promedioGeneral).sigla}</td>
@@ -14834,7 +14887,7 @@ ${estilosHtml}
                             <td class="p-1.5 font-bold text-slate-500 w-8">${idx+1}</td>
                             <td class="p-1.5 text-left uppercase font-medium">${escaparHtml(f.nombre)}</td>
                             <td class="p-1.5 font-bold text-amber-900" colspan="2">${escaparHtml(f.cualitativaOVP)}</td>
-                            <td class="p-1.5 text-slate-400" title="OVP es cualitativa: no aplica equivalencia RGLOEI">—</td>
+                            <td class="p-1.5 text-slate-400" title="Asignatura cualitativa: no aplica equivalencia RGLOEI">—</td>
                         </tr>`;
                         return;
                     }
@@ -14864,7 +14917,7 @@ ${estilosHtml}
                 // 3ro BGC (solo ese año) no muestra esta fila en absoluto.
                 if (!ocultarPromedioGeneral) tablaFilasAsignaturas += `
                     <tr class="border-t-2 border-slate-800 divide-x text-center bg-emerald-50 font-black">
-                        <td class="p-1.5" colspan="2">PROMEDIO GENERAL DE ASIGNATURAS <span class="font-normal text-[9px] normal-case">(no incluye OVP, es cualitativa)</span></td>
+                        <td class="p-1.5" colspan="2">PROMEDIO GENERAL DE ASIGNATURAS <span class="font-normal text-[9px] normal-case">(no incluye ${filasAsignaturas.some(f => f.esAnimacionLectura) ? 'OVP ni Animación a la Lectura, son cualitativas' : 'OVP, es cualitativa'})</span></td>
                         <td class="p-1.5">${esCualitativoElemental ? L(promedioGeneral) : (promedioGeneral || '-')}</td>
                         <td class="p-1.5">${esCualitativoElemental ? nivelCorto(promedioGeneral) : obtenerEscalaAlfabetica(promedioGeneral)}</td>
                         <td class="p-1.5">${esCualitativoElemental ? equivNum(promedioGeneral) : obtenerEquivalenciaRGLOEI(promedioGeneral).sigla}</td>
