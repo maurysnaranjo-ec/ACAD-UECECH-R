@@ -4847,7 +4847,7 @@
             if (!datosMat) return { t1: '', t2: '', t3: '' };
             const reducirPeriodo = (datosPeriodo) => {
                 if (!datosPeriodo) return '';
-                const valores = items.map(it => {
+                const valores = itemsDeDestreza(items).map(it => {
                     const item = ESCALA_DESTREZAS_CUALITATIVA.find(e => e.val === datosPeriodo[it.key]);
                     return (item && item.valor !== null) ? item.valor : null;
                 }).filter(v => v !== null);
@@ -10364,13 +10364,35 @@ ${estilosHtml}
         const AMBITOS_INICIAL = [
             { key: 'identidad', label: 'Identidad y autonomía' },
             { key: 'convivencia', label: 'Convivencia' },
-            { key: 'civica', label: 'Cívica y acompañamiento integral' },
             { key: 'medio', label: 'Relaciones con el medio natural y cultural' },
             { key: 'logicomatematicas', label: 'Relaciones lógico/matemáticas' },
             { key: 'lenguaje', label: 'Comprensión y expresión del lenguaje' },
             { key: 'artistica', label: 'Expresión artística' },
-            { key: 'corporal', label: 'Expresión corporal y motricidad' }
+            { key: 'corporal', label: 'Expresión corporal y motricidad' },
+            // 2026-11-25: Cívica se evalúa con frecuencia S/F/O/N (no A+ a E-), va al final (antes de
+            // Comportamiento) y NO entra en el resumen/promedio de los Ámbitos. Lo ya guardado con letras
+            // se conserva tal cual y se sigue mostrando hasta que el/la docente elija S, F, O o N.
+            { key: 'civica', label: 'Cívica y acompañamiento integral', escala: 'frecuencia' }
         ];
+        // Escala de frecuencia (Cívica y acompañamiento integral de Inicial 3 y 4 años).
+        const ESCALA_FRECUENCIA_CUALITATIVA = [
+            { val: 'S', lbl: 'Siempre', pts: 3 },
+            { val: 'F', lbl: 'Frecuentemente', pts: 2 },
+            { val: 'O', lbl: 'Ocasionalmente', pts: 1 },
+            { val: 'N', lbl: 'Nunca', pts: 0 }
+        ];
+        function esItemFrecuencia(item) { return !!(item && item.escala === 'frecuencia'); }
+        // Ítems que SÍ entran en el resumen A+ a E- (todos menos los de escala de frecuencia).
+        function itemsDeDestreza(items) { return (items || []).filter(it => !esItemFrecuencia(it)); }
+        // Anual de un ítem de frecuencia: promedio de puntos (S=3 … N=0) de los trimestres con S/F/O/N.
+        function frecuenciaMasCercana(valores) {
+            const pts = valores.map(v => (ESCALA_FRECUENCIA_CUALITATIVA.find(e => e.val === v) || {}).pts).filter(p => p !== undefined);
+            if (!pts.length) return '';
+            const prom = pts.reduce((a, b) => a + b, 0) / pts.length;
+            let mejor = ESCALA_FRECUENCIA_CUALITATIVA[0], dif = Infinity;
+            ESCALA_FRECUENCIA_CUALITATIVA.forEach(e => { const d = Math.abs(e.pts - prom); if (d < dif) { dif = d; mejor = e; } });
+            return mejor.val;
+        }
         // Los 7 Ámbitos de Aprendizaje del subnivel de Preparatoria (1ro EGB).
         const AMBITOS_PREPARATORIA = [
             { key: 'identidad', label: 'Identidad y Autonomía' },
@@ -11049,7 +11071,14 @@ ${estilosHtml}
                     const actual = datosPeriodo[item.key] || '';
                     let sel = `<select onchange="actualizarCeldaCualitativa('${est.id}', '${tKey}', '${item.key}', this.value)" class="bg-transparent font-bold text-center outline-none w-full text-xs ${bloqueadoAdmin ? 'bg-slate-100 cursor-not-allowed' : ''}" ${attrBloqueo}>`;
                     sel += `<option value=""></option>`;
-                    ESCALA_DESTREZAS_CUALITATIVA.forEach(e => { sel += `<option value="${e.val}" ${actual===e.val?'selected':''}>${e.val}</option>`; });
+                    if (esItemFrecuencia(item)) {
+                        // Nota anterior (A+ a E-) guardada antes del cambio a S/F/O/N: se sigue mostrando
+                        // (y se conserva) hasta que el/la docente elija S, F, O o N.
+                        if (actual && !ESCALA_FRECUENCIA_CUALITATIVA.some(e => e.val === actual)) sel += `<option value="${actual}" selected>${actual} (anterior)</option>`;
+                        ESCALA_FRECUENCIA_CUALITATIVA.forEach(e => { sel += `<option value="${e.val}" title="${e.lbl}" ${actual===e.val?'selected':''}>${e.val}</option>`; });
+                    } else {
+                        ESCALA_DESTREZAS_CUALITATIVA.forEach(e => { sel += `<option value="${e.val}" ${actual===e.val?'selected':''}>${e.val}</option>`; });
+                    }
                     sel += `</select>`;
                     fila += `<td class="p-1">${sel}</td>`;
                 });
@@ -11462,7 +11491,7 @@ ${estilosHtml}
         function definicionImportacionCalificaciones(curso) {
             if (esCursoDeAmbitosCualitativo(curso)) {
                 const cols = obtenerItemsCualitativosDelCurso(curso).map(item => ({
-                    titulo: item.label, alias: [item.label], tipo: 'letraNE',
+                    titulo: item.label, alias: [item.label], tipo: esItemFrecuencia(item) ? 'frecuencia' : 'letraNE',
                     leer: (reg) => reg[item.key], escribir: (reg, v) => { reg[item.key] = v; }
                 }));
                 if (esSlotDeAmbitos(curso) && curso.esAcompanamiento) cols.push({
@@ -11515,6 +11544,10 @@ ${estilosHtml}
             if (tipo === 'comportamiento') {
                 return ESCALA_COMPORTAMIENTO_CUALITATIVA.some(e => e.val === letra) ? { valor: letra } : { error: 'debe ser una letra de A a E' };
             }
+            if (tipo === 'frecuencia') {
+                const ini = { SIEMPRE: 'S', FRECUENTEMENTE: 'F', OCASIONALMENTE: 'O', NUNCA: 'N' }[letra] || letra;
+                return ESCALA_FRECUENCIA_CUALITATIVA.some(e => e.val === ini) ? { valor: ini } : { error: 'debe ser S, F, O o N' };
+            }
             if (tipo === 'letraNE' && (letra === 'N/E' || letra === 'NE')) return { valor: 'N/E' };
             if (esNotaLetraCualitativa(letra)) return { valor: letra };
             // También se acepta el equivalente numérico entero de la escala (10 = A+ ... 1 = E-).
@@ -11542,7 +11575,7 @@ ${estilosHtml}
             const escala = {
                 numeros: 'Escriba notas de 0 a 10 (se aceptan decimales con punto o coma).',
                 letras: 'Escriba letras de A+ a E- (A+, A-, B+, B-, C+, C-, D+, D-, E+, E-).',
-                ambitos: 'Escriba letras de A+ a E- o N/E (no evaluado).' + (def.cols.some(c => c.tipo === 'comportamiento') ? ' En Comportamiento, una letra de A a E.' : '')
+                ambitos: 'Escriba letras de A+ a E- o N/E (no evaluado).' + (def.cols.some(c => c.tipo === 'frecuencia') ? ' En Cívica y acompañamiento integral: S (Siempre), F (Frecuentemente), O (Ocasionalmente) o N (Nunca).' : '') + (def.cols.some(c => c.tipo === 'comportamiento') ? ' En Comportamiento, una letra de A a E.' : '')
             }[def.modo];
             const instrucciones = [
                 [`Plantilla de calificaciones: ${curso.label || ''} ${curso.paralelo || ''} - ${curso.asignatura || ''} - ${t}º Trimestre`],
@@ -13011,6 +13044,9 @@ ${estilosHtml}
             const datosEst = curso.calificacionesAmbitos && curso.calificacionesAmbitos[estId];
             if (!datosEst) return '';
             if (periodo === 'anual') {
+                // Cívica (S/F/O/N): anual por frecuencia más cercana, no por la escala A+ a E-.
+                const crudosTrim = ['t1', 't2', 't3'].map(p => (datosEst[p] || {})[itemKey]);
+                if (crudosTrim.some(v => ESCALA_FRECUENCIA_CUALITATIVA.some(e => e.val === v))) return frecuenciaMasCercana(crudosTrim);
                 const valoresTrim = ['t1', 't2', 't3'].map(p => {
                     const item = ESCALA_DESTREZAS_CUALITATIVA.find(e => e.val === (datosEst[p] || {})[itemKey]);
                     return (item && item.valor !== null) ? item.valor : null;
@@ -13037,7 +13073,7 @@ ${estilosHtml}
                 if (!valoresTrim.length) return '';
                 return obtenerCodigoDestrezaMasCercano(valoresTrim.reduce((a,b)=>a+b,0) / valoresTrim.length);
             }
-            const items = obtenerItemsCualitativosDelCurso(curso);
+            const items = itemsDeDestreza(obtenerItemsCualitativosDelCurso(curso));
             const datosPeriodo = datosEst[periodo] || {};
             const valores = items.map(it => {
                 const item = ESCALA_DESTREZAS_CUALITATIVA.find(e => e.val === datosPeriodo[it.key]);
@@ -13082,7 +13118,7 @@ ${estilosHtml}
             // "Niveles de Logro": un conteo A+ a E- POR CADA ítem (ámbito, o la asignatura si es
             // Inglés/ECA/Educación Física de Preparatoria) — no un único resumen combinado — para poder
             // ver, por ejemplo, cuántos estudiantes están en "Iniciado" específicamente en "Convivencia".
-            const conteoPorItem = items.map(() => { const c = {}; ESCALA_DESTREZAS_CUALITATIVA.forEach(e => c[e.val] = 0); return c; });
+            const conteoPorItem = items.map(it => { const c = {}; (esItemFrecuencia(it) ? ESCALA_FRECUENCIA_CUALITATIVA : ESCALA_DESTREZAS_CUALITATIVA).forEach(e => c[e.val] = 0); return c; });
             const sinNotaPorItem = items.map(() => 0);
 
             document.getElementById('print-tipo-reporte').innerText = "ACTA DE CALIFICACIONES " + etiquetaPeriodoActa(periodoFiltro);
@@ -13171,7 +13207,7 @@ ${estilosHtml}
             if (filaNum) filaNum.classList.add('hidden');
             filaCual.classList.remove('hidden');
 
-            const grupos = [
+            const gruposDestreza = [
                 { titulo: 'Destreza o aprendizaje alcanzado', codigos: ['A+', 'A-', 'B+'], clase: 'emerald' },
                 { titulo: 'Destreza o aprendizaje en proceso de desarrollo', codigos: ['B-', 'C+', 'C-'], clase: 'amber' },
                 { titulo: 'Destreza o aprendizaje iniciado', codigos: ['D+', 'D-', 'E+', 'E-'], clase: 'red' }
@@ -13182,9 +13218,13 @@ ${estilosHtml}
             if (Array.isArray(chartsInstanciasCualitativas)) chartsInstanciasCualitativas.forEach(c => c && c.destroy());
             chartsInstanciasCualitativas = [];
 
+            // Cívica (S/F/O/N) usa sus propios códigos, grupos y colores.
+            const gruposFrecuencia = [{ titulo: 'Frecuencia (S = Siempre, F = Frecuentemente, O = Ocasionalmente, N = Nunca)', codigos: ['S', 'F', 'O', 'N'], clase: 'sky' }];
+            const codigosDeItem = (item) => esItemFrecuencia(item) ? ESCALA_FRECUENCIA_CUALITATIVA.map(e => e.val) : ESCALA_DESTREZAS_CUALITATIVA.filter(e => e.valor !== null).map(e => e.val);
             filaCual.innerHTML = items.map((item, i) => {
                 const conteoLetras = conteoPorItem[i];
-                const totalValidos = ESCALA_DESTREZAS_CUALITATIVA.filter(e => e.valor !== null).reduce((sum, e) => sum + (conteoLetras[e.val] || 0), 0);
+                const grupos = esItemFrecuencia(item) ? gruposFrecuencia : gruposDestreza;
+                const totalValidos = codigosDeItem(item).reduce((sum, cod) => sum + (conteoLetras[cod] || 0), 0);
                 const porcentaje = (n) => totalValidos > 0 ? ((n / totalValidos) * 100).toFixed(1) : '0.0';
                 return `
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center border rounded-xl p-3 bg-slate-50">
@@ -13207,16 +13247,17 @@ ${estilosHtml}
                 </div>`;
             }).join('');
 
-            const codigosGrafico = ESCALA_DESTREZAS_CUALITATIVA.filter(e => e.valor !== null).map(e => e.val);
-            const coloresGrafico = codigosGrafico.map(cod => {
-                if (['A+','A-','B+'].includes(cod)) return '#10b981';
-                if (['B-','C+','C-'].includes(cod)) return '#f59e0b';
-                return '#ef4444';
-            });
             items.forEach((item, i) => {
                 const ctx = document.getElementById(`canvas-grafico-ambito-${i}`);
                 if (!ctx) return;
                 const conteoLetras = conteoPorItem[i];
+                const codigosGrafico = codigosDeItem(item);
+                const coloresGrafico = codigosGrafico.map(cod => {
+                    if (['A+','A-','B+','S'].includes(cod)) return '#10b981';
+                    if (['B-','C+','C-','F'].includes(cod)) return '#f59e0b';
+                    if (cod === 'O') return '#fb923c';
+                    return '#ef4444';
+                });
                 chartsInstanciasCualitativas.push(new Chart(ctx, {
                     type: 'bar',
                     data: {
@@ -14213,7 +14254,8 @@ ${estilosHtml}
         function renderizarResultadosAmbitosInformeAsignatura(curso, periodoSeleccionado) {
             // El Informe Anual (luego del Supletorio) no existe aquí — se trata igual que Anual.
             const periodo = periodoSeleccionado === 'anual_supletorio' ? 'anual' : periodoSeleccionado;
-            const items = obtenerItemsCualitativosDelCurso(curso);
+            // Cívica (S/F/O/N) no se mide en niveles de destreza Alcanzado/En Proceso/Iniciado.
+            const items = itemsDeDestreza(obtenerItemsCualitativosDelCurso(curso));
             const grupos = [
                 { titulo: 'Alcanzado', codigos: ['A+', 'A-', 'B+'], clase: 'emerald' },
                 { titulo: 'En Proceso', codigos: ['B-', 'C+', 'C-'], clase: 'amber' },
