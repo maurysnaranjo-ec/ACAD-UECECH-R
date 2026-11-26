@@ -8124,9 +8124,16 @@ ${estilosHtml}
                 if (!acompanante.otrasMaterias) acompanante.otrasMaterias = {};
                 const clave = `asig_${indiceMateria}`;
                 const esEstaMateriaOVP = curso.asignatura === 'OVP' || curso.materiaCruda === 'OVP';
+                // 2026-11-26: Inglés/ECA/Educación Física de Preparatoria (y Ámbitos) son cualitativas: su
+                // nota vive en calificacionesAmbitos (no en calificaciones), con el mismo bloque crudo
+                // { t1:{...}, t2:{...}, t3:{...} } que el Registro Interdisciplinar ya sabe leer.
+                const esEstaMateriaCualitativa = esMateriaCualitativaPorNombre(curso.materiaCruda || curso.asignatura);
                 (curso.estudiantes || []).forEach(est => {
                     if (!acompanante.otrasMaterias[est.id]) acompanante.otrasMaterias[est.id] = {};
-                    if (esEstaMateriaOVP) {
+                    if (esEstaMateriaCualitativa) {
+                        const bloque = curso.calificacionesAmbitos && curso.calificacionesAmbitos[est.id];
+                        acompanante.otrasMaterias[est.id][clave] = bloque ? JSON.parse(JSON.stringify(bloque)) : { t1: {}, t2: {}, t3: {} };
+                    } else if (esEstaMateriaOVP) {
                         acompanante.otrasMaterias[est.id][clave] = { ...obtenerCodigosOVPDesdeMatriz(curso.matrizOVP && curso.matrizOVP[est.id]), supletorio: '' };
                     } else {
                         const c = curso.calificaciones[est.id];
