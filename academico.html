@@ -1718,6 +1718,26 @@
                     </tr>
                 </table>
             </div>
+
+            <!-- ═══ 2026-11-26: Informe de ANIMACIÓN A LA LECTURA (formato institucional propio, solo para
+                 esa asignatura). Se guarda en el mismo informe del periodo, dentro de 'al', sin tocar
+                 los campos del Informe de Asignatura normal. Lo arma renderizarInformeAnimacionLectura(). -->
+            <div id="informe-animacion-area" class="hidden doc-institucional border-2 border-slate-800 max-w-5xl mx-auto text-xs">
+                <div class="grid grid-cols-[110px_1fr] border-b-2 border-slate-800">
+                    <div class="flex items-center justify-center p-2 border-r-2 border-slate-800">
+                        <img src="" class="logo-institucional-img w-20 h-20 object-contain" alt="Escudo Institucional">
+                    </div>
+                    <div class="text-center py-1">
+                        <h3 class="font-bold text-emerald-800 uppercase text-sm" id="al-print-ue">UNIDAD EDUCATIVA</h3>
+                        <p class="text-emerald-800 font-bold text-[10px]" id="al-print-amie">Código AMIE: -</p>
+                        <p class="text-emerald-800 font-bold text-[10px]">RIOBAMBA - ECUADOR</p>
+                        <p class="text-emerald-800 font-bold text-[10px]" id="al-print-anio">AÑO LECTIVO -</p>
+                        <h2 class="font-black uppercase text-base mt-1" id="al-print-titulo">INFORME DE ANIMACIÓN A LA LECTURA</h2>
+                    </div>
+                </div>
+                <div id="al-aviso-tamano" class="hidden no-print bg-red-100 border-b border-red-700 text-red-800 font-bold text-[11px] px-2 py-1"></div>
+                <div id="al-contenido"></div>
+            </div>
         </section>
 
         <section id="sec-convocatoria" class="tab-content hidden bg-white p-6 rounded-xl shadow border border-slate-200">
@@ -5365,8 +5385,10 @@ ${estilosHtml}
             if (boton) { boton.disabled = true; boton.innerText = '⏳ Preparando...'; }
             try {
                 await esperarProximoFrame();
-                const html = capturarBloqueImprimible(clonarConCamposComoTexto('#informe-asignatura-area'));
-                abrirVentanaImpresionDocumentos('Informe de Asignatura', [{ html }], 'portrait', false);
+                // Animación a la Lectura tiene su propio formato (solo uno de los dos está visible).
+                const esAnimacion = !document.getElementById('informe-animacion-area').classList.contains('hidden');
+                const html = capturarBloqueImprimible(clonarConCamposComoTexto(esAnimacion ? '#informe-animacion-area' : '#informe-asignatura-area'));
+                abrirVentanaImpresionDocumentos(esAnimacion ? 'Informe de Animación a la Lectura' : 'Informe de Asignatura', [{ html }], 'portrait', false);
             } finally {
                 if (boton) { boton.disabled = false; boton.innerText = textoOriginal; }
             }
@@ -7507,6 +7529,12 @@ ${estilosHtml}
             const lleno = (v) => String(v === undefined || v === null ? '' : v).trim() !== '';
             if (lleno(inf.observaciones) || lleno(inf.revisadoPor)) return true;
             if (inf.conclusionesL.some(lleno) || Object.values(inf.consolidado).some(lleno)) return true;
+            // Informe de Animación a la Lectura (datos.al).
+            const al = inf.al;
+            if (al && typeof al === 'object') {
+                if (['fechaJunta', 'sesiones', 'conclusion', 'acciones'].some(k => lleno(al[k]))) return true;
+                if (['exp', 'val', 'acomp'].some(l => Array.isArray(al[l]) && al[l].some(f => Object.keys(f).some(k => k !== 'fijo' && !(k === 'a' && f.fijo) && lleno(f[k]))))) return true;
+            }
             return LISTAS_TABLA_IA.some(lista => inf[lista].some(fila =>
                 Object.keys(fila).some(k => k !== 'fijo' && !(k === 'c' && fila.fijo) && lleno(fila[k]))));
         }
@@ -7517,7 +7545,7 @@ ${estilosHtml}
             return excelGenerarReporteConsolidado(botonEl, `Informes_Asignatura_${etiqueta.replace(/\s+/g, '_')}_Todos_Los_Cursos`, async (XLSXE, wb, usados, cursosConDatos) => {
                 const responsables = await excelObtenerResponsablesReportes();
                 const resumen = [], faltantes = [];
-                const hojas = { consolidado: [], conclusiones: [], observaciones: [] };
+                const hojas = { consolidado: [], conclusiones: [], observaciones: [], animacion: [] };
                 LISTAS_TABLA_IA.forEach(l => { hojas[l] = []; });
                 const lleno = (v) => String(v === undefined || v === null ? '' : v).trim() !== '';
 
@@ -7552,6 +7580,16 @@ ${estilosHtml}
                         hojas.consolidado.push([...base, ...ITEMS_CONSOLIDADO_IA.map(([k]) => inf.consolidado[k] || '')]);
                         inf.conclusionesL.forEach((texto, i) => { if (lleno(texto)) hojas.conclusiones.push([...base, i + 1, texto]); });
                         hojas.observaciones.push([...base, inf.observaciones || '', inf.revisadoPor || '']);
+                        // Animación a la Lectura: su formato propio va en una hoja aparte.
+                        if (inf.al && typeof inf.al === 'object') {
+                            const al = inf.al;
+                            const unir = (arr, fn) => (Array.isArray(arr) ? arr : []).map(fn).filter(lleno).join('\n');
+                            hojas.animacion.push([...base, al.fechaJunta || '', al.sesiones || '',
+                                unir(al.exp, f => [f.tx, f.ac, f.ev].filter(lleno).join(' | ')),
+                                unir(al.val, f => (lleno(f.av) || lleno(f.pf)) ? `${f.a || ''}: ${f.av || '-'} / Por fortalecer: ${f.pf || '-'}` : ''),
+                                unir(al.acomp, f => [f.es, f.si, f.ac].filter(lleno).join(' | ')),
+                                al.conclusion || '', al.acciones || '']);
+                        }
                     });
                 });
 
@@ -7573,6 +7611,9 @@ ${estilosHtml}
                 excelHojaReporteDocumentos(XLSXE, wb, usados, '9 Conclusiones', titulo('9. CONCLUSIONES DEL DOCENTE'), [...baseCols, 'N.º', 'Conclusión'], hojas.conclusiones, [...baseAnchos, 5, 70]);
                 hojaLista('compromisos');
                 excelHojaReporteDocumentos(XLSXE, wb, usados, '11 Observaciones', titulo('11. OBSERVACIONES Y REVISADO POR'), [...baseCols, 'Observaciones', 'Revisado por'], hojas.observaciones, [...baseAnchos, 70, 28]);
+                if (hojas.animacion.length) excelHojaReporteDocumentos(XLSXE, wb, usados, 'Animación Lectura', titulo('INFORME DE ANIMACIÓN A LA LECTURA'),
+                    [...baseCols, 'Fecha de junta', 'Sesiones', '2. Experiencias lectoras', '3. Valoración cualitativa', '4. Acompañamiento', '5. Conclusión', '5. Acciones propuestas'],
+                    hojas.animacion, [...baseAnchos, 14, 10, 50, 60, 50, 50, 50]);
             });
         }
 
@@ -13872,12 +13913,12 @@ ${estilosHtml}
         }
 
         function iaMostrarAviso(texto) {
-            const el = document.getElementById('ia2-aviso-tamano');
-            if (!el) return;
-            el.textContent = texto;
-            el.classList.remove('hidden');
+            // Se muestra en el informe normal y en el de Animación a la Lectura (solo uno está visible).
+            const els = ['ia2-aviso-tamano', 'al-aviso-tamano'].map(id => document.getElementById(id)).filter(Boolean);
+            if (!els.length) return;
+            els.forEach(el => { el.textContent = texto; el.classList.remove('hidden'); });
             clearTimeout(iaMostrarAviso._t);
-            iaMostrarAviso._t = setTimeout(() => el.classList.add('hidden'), 8000);
+            iaMostrarAviso._t = setTimeout(() => els.forEach(el => el.classList.add('hidden')), 8000);
         }
 
         // Aplica un cambio SOLO si el informe del periodo sigue cabiendo en la celda; si no, lo revierte.
@@ -14042,10 +14083,208 @@ ${estilosHtml}
             if (campo === 'observaciones') iaAutoAlto(input);
         }
 
+        // ═══════════════ Informe de ANIMACIÓN A LA LECTURA (2026-11-26) ═══════════════
+        // Formato institucional "49_INFORME ANIMACION A LA LECTURA": instrumento de seguimiento
+        // CUALITATIVO (sin notas ni promedios). Solo para cursos cuya asignatura es Animación a la
+        // Lectura; las demás asignaturas siguen con el Informe de Asignatura normal sin cambios.
+        // Se guarda dentro del MISMO informe del periodo (celda "materia::periodo"), en datos.al, así que
+        // comparte el límite de 45.000 caracteres y el control de iaAplicarCambioSeguro.
+        const AL_ASPECTOS_VALORACION = [
+            'Interés y disposición para acercarse a la lectura.',
+            'Participación y diálogo sobre lo leído; comparte ideas, emociones y opiniones.',
+            'Relación del texto con experiencias, saberes y contexto personal o comunitario.',
+            'Expresión oral, interpretación personal y escucha respetuosa.',
+            'Producción creativa vinculada con la lectura (oral, gráfica o escrita).'
+        ];
+        const AL_ESQUEMA = {
+            exp: { max: 15, numerar: false, boton: '➕ Agregar experiencia', cols: [
+                { k: 'tx', t: 'Textos / recursos utilizados', w: 'w-[30%]', ph: 'Ej.: Cuento "El principito" (fragmentos), audiolibro.' },
+                { k: 'ac', t: 'Actividades realizadas (resumir las principales)', ph: 'Ej.: Lectura compartida, dramatización y diálogo sobre el final.' },
+                { k: 'ev', t: 'Evidencias o productos', w: 'w-[28%]', ph: 'Ej.: Dibujos del personaje, mural del curso.' }
+            ] },
+            val: { max: 12, numerar: false, boton: '➕ Agregar aspecto', cols: [
+                { k: 'a',  t: 'Aspectos observados', w: 'w-[34%]', ml: 300, fijable: true, ph: 'Aspecto observado' },
+                { k: 'av', t: 'Avances / fortalezas del grupo', ph: 'Ej.: La mayoría participa con entusiasmo.' },
+                { k: 'pf', t: 'Aspectos por fortalecer', ph: 'Ej.: Respetar turnos al opinar.' }
+            ] },
+            acomp: { max: 40, numerar: true, boton: '➕ Agregar estudiante', cols: [
+                { k: 'es', t: 'Nombres del estudiante', w: 'w-[26%]', ml: 150, ph: 'Ej.: A. C.' },
+                { k: 'si', t: 'Situación observada', ph: 'Ej.: escasa participación, poco interés o dificultad para expresar sus ideas.' },
+                { k: 'ac', t: 'Acción de acompañamiento', ph: 'Ej.: textos de su interés, lectura acompañada y diálogo individual.' }
+            ] }
+        };
+
+        function esCursoAnimacionLectura(curso) {
+            return !!curso && (esMateriaAnimacionLectura(curso.asignatura) || esMateriaAnimacionLectura(curso.materiaCruda));
+        }
+
+        function alFilaVacia(lista) {
+            const fila = {};
+            AL_ESQUEMA[lista].cols.forEach(c => { fila[c.k] = ''; });
+            return fila;
+        }
+
+        // Crea (o repara) datos.al sin tocar nada más del informe. Idempotente.
+        function migrarInformeAnimacionLectura(datos) {
+            if (!datos.al || typeof datos.al !== 'object') datos.al = {};
+            const al = datos.al;
+            ['fechaJunta', 'sesiones', 'conclusion', 'acciones', 'fechaDocente', 'fechaRevisa'].forEach(k => { if (typeof al[k] !== 'string') al[k] = ''; });
+            if (!Array.isArray(al.exp)) al.exp = [alFilaVacia('exp')];
+            if (!Array.isArray(al.val)) al.val = AL_ASPECTOS_VALORACION.map(a => ({ a, av: '', pf: '', fijo: 1 }));
+            if (!Array.isArray(al.acomp)) al.acomp = [alFilaVacia('acomp'), alFilaVacia('acomp'), alFilaVacia('acomp')];
+            return al;
+        }
+
+        function alDatosActuales() {
+            const datos = iaDatosActuales();
+            migrarInformeAnimacionLectura(datos);
+            return datos;
+        }
+
+        function alHtmlTabla(lista, al) {
+            const esq = AL_ESQUEMA[lista];
+            const filas = al[lista];
+            const totalCols = esq.cols.length + (esq.numerar ? 1 : 0) + 1;
+            let h = `<table class="w-full border-collapse text-[10px]"><thead><tr class="bg-slate-200 font-bold uppercase divide-x divide-slate-800 border-b border-slate-800">`;
+            if (esq.numerar) h += `<td class="p-1 w-8 text-center">N.º</td>`;
+            esq.cols.forEach(c => { h += `<td class="p-1 ${c.w || ''} text-left">${c.t}</td>`; });
+            h += `<td class="no-print w-6"></td></tr></thead><tbody class="divide-y divide-slate-400">`;
+            if (!filas.length) h += `<tr><td colspan="${totalCols}" class="p-2 text-slate-400 italic text-center">Sin registros.</td></tr>`;
+            filas.forEach((fila, idx) => {
+                h += `<tr class="divide-x divide-slate-400 align-top">`;
+                if (esq.numerar) h += `<td class="p-1 text-center font-bold">${idx + 1}</td>`;
+                esq.cols.forEach(c => {
+                    if (c.fijable && fila.fijo) {
+                        h += `<td class="p-1 align-top ${c.w || ''}">${escaparHtml(fila[c.k])}</td>`; // aspecto oficial: no editable
+                    } else {
+                        h += `<td class="p-0.5 align-top ${c.w || ''}"><textarea rows="1" maxlength="${c.ml || 600}" placeholder="${escaparHtml(c.ph || '')}" oninput="alActualizarCampo('${lista}', ${idx}, '${c.k}', this)" class="ia2-autoalto w-full p-1 outline-none resize-none bg-transparent text-[10px] leading-snug overflow-hidden">${escaparHtml(fila[c.k] || '')}</textarea></td>`;
+                    }
+                });
+                h += `<td class="p-0.5 text-center align-top no-print"><button onclick="alQuitarFila('${lista}', ${idx})" class="text-red-600 font-bold" title="Quitar fila">✕</button></td></tr>`;
+            });
+            h += `</tbody></table>`;
+            return h + `<div class="no-print px-1 py-0.5 flex justify-end"><button onclick="alAgregarFila('${lista}')" class="bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-bold px-2 py-0.5 rounded">${esq.boton}</button></div>`;
+        }
+
+        function alCampoTexto(campo, valor, ph, ml, clases) {
+            return `<textarea rows="1" maxlength="${ml || 1500}" placeholder="${escaparHtml(ph || '')}" oninput="alActualizarTexto('${campo}', this)" class="ia2-autoalto w-full p-1 outline-none resize-none bg-transparent leading-snug overflow-hidden ${clases || 'text-[10px]'}">${escaparHtml(valor || '')}</textarea>`;
+        }
+
+        function renderizarInformeAnimacionLectura(curso, periodo, datos) {
+            const al = migrarInformeAnimacionLectura(datos);
+            const nivel = obtenerNivelAcademico(curso.label);
+            const titulos = { t1: '1ER TRIMESTRE', t2: '2DO TRIMESTRE', t3: '3ER TRIMESTRE', anual: 'ANUAL', anual_supletorio: 'ANUAL' };
+            document.getElementById('al-print-ue').innerText = db.configGeneral.ue || 'UNIDAD EDUCATIVA NO CONFIGURADA';
+            document.getElementById('al-print-amie').innerText = `Código AMIE: ${db.configGeneral.amie || '-'}`;
+            document.getElementById('al-print-anio').innerText = `AÑO LECTIVO ${obtenerAnioLectivo(curso) || '-'}`;
+            document.getElementById('al-print-titulo').innerText = `INFORME DE ANIMACIÓN A LA LECTURA – JUNTA DE CURSO ${titulos[periodo] || ''}`.trim();
+
+            const enc = (t) => `<div class="bg-amber-100 font-bold uppercase px-2 py-1 border-b border-slate-800">${t}</div>`;
+            const nota = (t) => `<p class="px-2 py-1 text-[10px] italic text-slate-600 border-b border-slate-800">${t}</p>`;
+            const etq = 'bg-slate-200 font-bold uppercase p-1 w-1/4 text-left';
+            const docente = db.configGeneral.docente || '-';
+            let h = '';
+            h += enc('1. Datos Informativos');
+            h += `<table class="w-full border-collapse text-[10px]">
+                <tr class="divide-x divide-slate-800 border-b border-slate-800"><td class="${etq}">Docente responsable</td><td class="p-1 font-bold w-1/4">${escaparHtml(docente)}</td><td class="${etq}">Año / Curso</td><td class="p-1 font-bold w-1/4">${escaparHtml(curso.label || '-')}</td></tr>
+                <tr class="divide-x divide-slate-800 border-b border-slate-800"><td class="${etq}">Paralelo</td><td class="p-1 font-bold">${escaparHtml(curso.paralelo || '-')}</td><td class="${etq}">Jornada</td><td class="p-1 font-bold">${escaparHtml(curso.jornada || db.configGeneral.jornada || '-')}</td></tr>
+                <tr class="divide-x divide-slate-800 border-b border-slate-800"><td class="${etq}">Nivel / Subnivel</td><td class="p-1 font-bold">${escaparHtml((nivel && nivel.etiqueta) || '-')}</td><td class="${etq}">Fecha de junta</td><td class="p-0.5">${alCampoTexto('fechaJunta', al.fechaJunta, 'Ej.: 15/12/2026', 60, 'text-[10px] font-bold')}</td></tr>
+                <tr class="divide-x divide-slate-800 border-b border-slate-800"><td class="${etq}">N.º de estudiantes</td><td class="p-1 font-bold">${(curso.estudiantes || []).length}</td><td class="${etq}">Sesiones desarrolladas</td><td class="p-0.5">${alCampoTexto('sesiones', al.sesiones, 'Ej.: 10', 60, 'text-[10px] font-bold')}</td></tr>
+            </table>`;
+            h += enc('2. Experiencias Lectoras Desarrolladas');
+            h += `<div class="border-b border-slate-800">${alHtmlTabla('exp', al)}</div>`;
+            h += enc('3. Valoración Cualitativa del Proceso Lector');
+            h += nota('Describa brevemente lo observado en el grupo. No registrar notas numéricas ni promedios.');
+            h += `<div class="border-b border-slate-800">${alHtmlTabla('val', al)}</div>`;
+            h += enc('4. Estudiantes que Requieren Acompañamiento o Motivación Adicional');
+            h += nota('Registrar a quienes necesitan apoyo para vincularse con las experiencias lectoras. Esta identificación no constituye una alerta académica por calificación.');
+            h += `<div class="border-b border-slate-800">${alHtmlTabla('acomp', al)}</div>`;
+            h += enc('5. Conclusión y Acciones para el Siguiente Trimestre');
+            h += `<table class="w-full border-collapse text-[10px]">
+                <tr class="bg-slate-200 font-bold uppercase divide-x divide-slate-800 border-b border-slate-800"><td class="p-1 w-1/2">Conclusión general del trimestre</td><td class="p-1 w-1/2">Acciones propuestas</td></tr>
+                <tr class="divide-x divide-slate-800 border-b border-slate-800 align-top"><td class="p-0.5">${alCampoTexto('conclusion', al.conclusion, 'Ej.: El grupo muestra mayor interés por la lectura compartida...', 2000)}</td><td class="p-0.5">${alCampoTexto('acciones', al.acciones, 'Ej.: Incorporar textos de autores ecuatorianos y círculos de lectura...', 2000)}</td></tr>
+            </table>`;
+            h += `<table class="w-full border-collapse text-center text-[10px] mt-0">
+                <tr class="bg-slate-200 font-bold uppercase divide-x divide-slate-800 border-b border-slate-800"><td class="p-1 w-1/2">Docente responsable</td><td class="p-1 w-1/2">Revisado por</td></tr>
+                <tr class="divide-x divide-slate-800 border-b border-slate-800">
+                    <td class="p-3 h-16 align-bottom"><p class="doc-firma-nombre">${escaparHtml(formatearNombreFirma(db.configGeneral.docente || 'Docente Sin Configurar'))}</p><p class="text-[9px] uppercase">Firma</p></td>
+                    <td class="p-3 h-16 align-bottom"><input type="text" id="al-firma-revisa" maxlength="150" placeholder="Nombre de quien revisa" oninput="alActualizarRevisa(this)" value="${escaparHtml(datos.revisadoPor || '')}" class="w-full text-center outline-none no-print-border bg-transparent doc-firma-nombre"><p class="text-[9px] uppercase">Firma</p></td>
+                </tr>
+                <tr class="divide-x divide-slate-800 text-left">
+                    <td class="p-1 w-1/2"><div class="grid grid-cols-[auto_1fr] items-start gap-1"><span class="pt-1">Fecha:</span>${alCampoTexto('fechaDocente', al.fechaDocente, '__/__/____', 40, 'text-[10px] font-bold')}</div></td>
+                    <td class="p-1 w-1/2"><div class="grid grid-cols-[auto_1fr] items-start gap-1"><span class="pt-1">Fecha:</span>${alCampoTexto('fechaRevisa', al.fechaRevisa, '__/__/____', 40, 'text-[10px] font-bold')}</div></td>
+                </tr>
+            </table>`;
+            h += `<p class="px-2 py-1 text-[9px] italic text-slate-500 border-t border-slate-800">Instrumento de seguimiento cualitativo. Registrar observaciones y evidencias del proceso lector, no codificaciones numéricas.</p>`;
+            document.getElementById('al-contenido').innerHTML = h;
+            iaActualizarContador(datos);
+            requestAnimationFrame(() => document.querySelectorAll('#informe-animacion-area .ia2-autoalto').forEach(iaAutoAlto));
+        }
+
+        function alActualizarCampo(lista, idx, campo, el) {
+            const datos = alDatosActuales();
+            const fila = datos.al[lista] && datos.al[lista][idx];
+            if (!fila) return;
+            const anterior = fila[campo] || '';
+            iaAplicarCambioSeguro(datos, () => { fila[campo] = el.value; }, () => { fila[campo] = anterior; el.value = anterior; });
+            iaAutoAlto(el);
+        }
+
+        function alActualizarTexto(campo, el) {
+            const datos = alDatosActuales();
+            const anterior = datos.al[campo] || '';
+            iaAplicarCambioSeguro(datos, () => { datos.al[campo] = el.value; }, () => { datos.al[campo] = anterior; el.value = anterior; });
+            iaAutoAlto(el);
+        }
+
+        function alActualizarRevisa(el) {
+            const datos = alDatosActuales();
+            const anterior = datos.revisadoPor || '';
+            iaAplicarCambioSeguro(datos, () => { datos.revisadoPor = el.value; }, () => { datos.revisadoPor = anterior; el.value = anterior; });
+        }
+
+        function alAgregarFila(lista) {
+            const datos = alDatosActuales();
+            const arr = datos.al[lista];
+            const max = AL_ESQUEMA[lista].max;
+            if (arr.length >= max) { iaMostrarAviso(`⚠️ Esta sección admite como máximo ${max} filas.`); return; }
+            if (!iaAplicarCambioSeguro(datos, () => arr.push(alFilaVacia(lista)), () => arr.pop())) return;
+            const curso = db.cursos[db.cursoActivoIndex];
+            renderizarInformeAnimacionLectura(curso, document.getElementById('filtro-periodo-informe-asig').value, datos);
+        }
+
+        async function alQuitarFila(lista, idx) {
+            const datos = alDatosActuales();
+            const arr = datos.al[lista];
+            if (!arr || idx >= arr.length) return;
+            const fila = arr[idx];
+            const tieneContenido = Object.keys(fila).some(k => k !== 'fijo' && !(k === 'a' && fila.fijo) && String(fila[k] || '').trim() !== '');
+            if (tieneContenido || fila.fijo) {
+                const nombre = fila.fijo ? `el aspecto "${fila.a}"` : 'esta fila';
+                if (!(await mostrarModalConfirmacion(`¿Quitar ${nombre} del informe? Se perderá lo escrito en ella.`, 'Quitar'))) return;
+            }
+            arr.splice(idx, 1);
+            salvar();
+            const curso = db.cursos[db.cursoActivoIndex];
+            renderizarInformeAnimacionLectura(curso, document.getElementById('filtro-periodo-informe-asig').value, datos);
+        }
+
         function renderizarInformeAsignatura() {
             const curso = db.cursos[db.cursoActivoIndex];
             const selPeriodo = document.getElementById('filtro-periodo-informe-asig');
             if(!selPeriodo) return;
+
+            // 2026-11-26: Animación a la Lectura usa su propio formato (ver renderizarInformeAnimacionLectura).
+            const esAnimacion = esCursoAnimacionLectura(curso);
+            document.getElementById('informe-asignatura-area').classList.toggle('hidden', esAnimacion);
+            document.getElementById('informe-animacion-area').classList.toggle('hidden', !esAnimacion);
+            if (esAnimacion) {
+                const optSup = document.getElementById('opt-informe-asig-supletorio');
+                if (optSup) optSup.classList.add('hidden'); // es cualitativa: no hay supletorio
+                if (selPeriodo.value === 'anual_supletorio') selPeriodo.value = 'anual';
+                renderizarInformeAnimacionLectura(curso, selPeriodo.value, obtenerClaveTextoInforme(selPeriodo.value));
+                return;
+            }
 
             // Ámbitos (Inicial/Preparatoria) no tienen examen supletorio: se oculta esa opción del
             // selector, y si quedó elegida de un curso anterior, se cae de vuelta a "Anual".
@@ -15926,7 +16165,7 @@ ${estilosHtml}
                         let json2 = '';
                         if (inf.v === 2) {
                             const parte2 = { v: 2 };
-                            ['cumplimiento', 'resultados', 'alertas', 'alertasSup', 'alertasNoSup', 'consolidado', 'refuerzoPed', 'nee', 'conclusionesL', 'compromisos'].forEach(k => { if (inf[k] !== undefined) parte2[k] = inf[k]; });
+                            ['cumplimiento', 'resultados', 'alertas', 'alertasSup', 'alertasNoSup', 'consolidado', 'refuerzoPed', 'nee', 'conclusionesL', 'compromisos', 'al'].forEach(k => { if (inf[k] !== undefined) parte2[k] = inf[k]; });
                             json2 = JSON.stringify(parte2);
                         }
                         const trozos = COLUMNAS_JSON_FORMATO2_IA.map((_, i) => json2.slice(i * 30000, (i + 1) * 30000));
