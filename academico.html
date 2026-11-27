@@ -14128,11 +14128,20 @@ ${estilosHtml}
         function migrarInformeAnimacionLectura(datos) {
             if (!datos.al || typeof datos.al !== 'object') datos.al = {};
             const al = datos.al;
-            ['fechaJunta', 'sesiones', 'conclusion', 'acciones', 'fechaDocente', 'fechaRevisa'].forEach(k => { if (typeof al[k] !== 'string') al[k] = ''; });
+            ['fechaJunta', 'sesiones', 'conclusion', 'acciones', 'fechaDocente', 'fechaRevisa', 'jornada'].forEach(k => { if (typeof al[k] !== 'string') al[k] = ''; });
             if (!Array.isArray(al.exp)) al.exp = [alFilaVacia('exp')];
             if (!Array.isArray(al.val)) al.val = AL_ASPECTOS_VALORACION.map(a => ({ a, av: '', pf: '', fijo: 1 }));
             if (!Array.isArray(al.acomp)) al.acomp = [alFilaVacia('acomp'), alFilaVacia('acomp'), alFilaVacia('acomp')];
             return al;
+        }
+
+        // Fecha para el calendario (AAAA-MM-DD). Una fecha escrita antes a mano como "20/12/2026" se
+        // muestra igual en el calendario; cualquier otro texto se deja sin tocar hasta que se elija fecha.
+        function alFechaISO(valor) {
+            const v = String(valor || '').trim();
+            if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+            const m = v.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+            return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : '';
         }
 
         function alDatosActuales() {
@@ -14187,8 +14196,8 @@ ${estilosHtml}
             h += enc('1. Datos Informativos');
             h += `<table class="w-full border-collapse text-[10px]">
                 <tr class="divide-x divide-slate-800 border-b border-slate-800"><td class="${etq}">Docente responsable</td><td class="p-1 font-bold w-1/4">${escaparHtml(docente)}</td><td class="${etq}">Año / Curso</td><td class="p-1 font-bold w-1/4">${escaparHtml(curso.label || '-')}</td></tr>
-                <tr class="divide-x divide-slate-800 border-b border-slate-800"><td class="${etq}">Paralelo</td><td class="p-1 font-bold">${escaparHtml(curso.paralelo || '-')}</td><td class="${etq}">Jornada</td><td class="p-1 font-bold">${escaparHtml(curso.jornada || db.configGeneral.jornada || '-')}</td></tr>
-                <tr class="divide-x divide-slate-800 border-b border-slate-800"><td class="${etq}">Nivel / Subnivel</td><td class="p-1 font-bold">${escaparHtml((nivel && nivel.etiqueta) || '-')}</td><td class="${etq}">Fecha de junta</td><td class="p-0.5">${alCampoTexto('fechaJunta', al.fechaJunta, 'Ej.: 15/12/2026', 60, 'text-[10px] font-bold')}</td></tr>
+                <tr class="divide-x divide-slate-800 border-b border-slate-800"><td class="${etq}">Paralelo</td><td class="p-1 font-bold">${escaparHtml(curso.paralelo || '-')}</td><td class="${etq}">Jornada</td><td class="p-0.5">${alCampoTexto('jornada', al.jornada || curso.jornada || db.configGeneral.jornada || '', 'Ej.: Matutina', 60, 'text-[10px] font-bold')}</td></tr>
+                <tr class="divide-x divide-slate-800 border-b border-slate-800"><td class="${etq}">Nivel / Subnivel</td><td class="p-1 font-bold">${escaparHtml((nivel && nivel.etiqueta) || '-')}</td><td class="${etq}">Fecha de junta</td><td class="p-0.5"><input type="date" value="${escaparHtml(alFechaISO(al.fechaJunta))}" onchange="alActualizarTexto('fechaJunta', this)" class="w-full p-1 outline-none bg-transparent text-[10px] font-bold"></td></tr>
                 <tr class="divide-x divide-slate-800 border-b border-slate-800"><td class="${etq}">N.º de estudiantes</td><td class="p-1 font-bold">${(curso.estudiantes || []).length}</td><td class="${etq}">Sesiones desarrolladas</td><td class="p-0.5">${alCampoTexto('sesiones', al.sesiones, 'Ej.: 10', 60, 'text-[10px] font-bold')}</td></tr>
             </table>`;
             h += enc('2. Experiencias Lectoras Desarrolladas');
